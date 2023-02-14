@@ -19,6 +19,7 @@
 #include <cfloat>
 #include <algorithm>
 #include "elem2Edge.h"
+#include "fluxes.h"
 
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
@@ -468,6 +469,25 @@ void secondOrderFV(int opt, vector<vector<double>> &U, vector<double> const &are
     double residual;;
     // double residual = computeL1ResidualNorm();
     
+    vector<double> F(4);
+    double s;
+    
+    // set the flux to use
+//    structFlux (*flux)(vector<double>& UL, vector<double>& UR, double gamma, vector<double>& n);
+    structFlux output;
+    
+//    if(opt == 1){
+//        flux = roe;
+//    }
+//
+//    else if (opt == 2){
+//        flux = rusanov;
+//    }
+//
+//    else if (opt == 3){
+//        flux = hlle;
+//    }
+    
     while(abs(residual) > pow(10,-5)){ // TODO: Change
         
         Vector2d zeros = {0.0,0.0};
@@ -536,30 +556,34 @@ void secondOrderFV(int opt, vector<vector<double>> &U, vector<double> const &are
                 
                 // Find u_hat (the average of the L and R cell averages)
                     // TODO: do this
-                vector<double> UL = U[elemLR[0]];
-                vector<double> UR = U[elemLR[1]];
+                vector<double> UL_limiting = U[elemLR[0]];
+                vector<double> UR_limiting = U[elemLR[1]];
                 vector<double> Uhat;
-                Uhat.reserve(UL.size());
+                Uhat.reserve(UL_limiting.size());
                 
-                for(int iU = 0; iU < UL.size(); iU++){
-                    Uhat.emplace_back(0.5*(UL[iU]+UR[iU]));
+                for(int iU = 0; iU < UL_limiting.size(); iU++){
+                    Uhat.emplace_back(0.5*(UL_limiting[iU]+UR_limiting[iU]));
                 }
                 
                 
                 // Add u_hat*n*delta_l to gradient value in vector for L elem and subtract this for the right element (if existing)
                     // TODO: do this
                 
-                for(int iU = 0; iU < UL.size(); iU++){
-                    Uhat.emplace_back(0.5*(UL[iU]+UR[iU]));
+                for(int iU = 0; iU < UL_limiting.size(); iU++){
+                    Uhat.emplace_back(0.5*(UL_limiting[iU]+UR_limiting[iU]));
                 }
                 
                 // Adding u_hat*n*delta_l to elemL and subtracting from elemR
-                for(int iU = 0; iU < UL.size(); iU++){
+                for(int iU = 0; iU < UL_limiting.size(); iU++){
                     int iElemL = elemLR[0];
-                    int iElemR = elemLR[1];
                     Vector2d gradU_add = {n[0]*Uhat[iU]*delta_l,n[1]*Uhat[iU]*delta_l};
                     grad_u[iElemL][iU] += gradU_add;
-                    grad_u[iElemR][iU] -= gradU_add;
+                    
+                    if(iLocal.isBound == false){ // if right element exists
+                        int iElemR = elemLR[1];
+                        grad_u[iElemR][iU] -= gradU_add;
+                    }
+    
                 }
                 
                 
@@ -575,7 +599,132 @@ void secondOrderFV(int opt, vector<vector<double>> &U, vector<double> const &are
         }
         
         // Initialize Residual and Wave Speed on Each Cell to be Zero
+        vector<vector<double>> residuals(nelem, vector<double>(5,0)); // residual for each state and then the wave speed
         
+        
+        for(int iElem = 0; iElem < nelem; iElem++){
+            for(int iF = 0; iF < 3; iF++){
+                
+                // Generating appropriate indices
+                int iFaceGlobal = elemBounds[iElem][iF];
+                iGlobal2Local iLocal = iG2L(iFaceGlobal, bounds, interiorFaces);
+                int iFaceLocal = iLocal.index;
+                
+                // Finding the Left and Right elements
+                vector<int> elemLR = findAdjElem(elem, I2E, B2E, elemBounds, bounds, interiorFaces, globalEdge, iFaceGlobal);
+                
+                // Initializing the normal vector pointing from L to R
+                vector<double> n;
+                
+                // Computing normal vectors of vector<double> type
+                if(iLocal.isBound == false){ // interior edge
+                    n = {In[iFaceLocal][0], In[iFaceLocal][1]};
+                }
+                
+                else{ // boundary edge
+                    n = {Bn[iFaceLocal][0], Bn[iFaceLocal][1]};
+                }
+                
+                // Compute face length
+                double length = computeEdgeLength(iFaceGlobal, globalEdge, nodes);
+                
+                // Computing face midpoint vector and cell centroid vector
+                // midpoint
+                double n1x = nodes[globalEdge[iFaceGlobal][0] - 1][0];
+                double n1y = nodes[globalEdge[iFaceGlobal][0] - 1][1];
+                double n2x = nodes[globalEdge[iFaceGlobal][1] - 1][0];
+                double n2y = nodes[globalEdge[iFaceGlobal][1] - 1][1];
+                
+                Vector2d midpoint = {0.5*(n1x+n2x),0.5*(n1y+n2y)};
+                
+                // centroid for left element
+                int iElemL = elemLR[0];
+                double xCentroidL = (1/3)*((nodes[ elem[iElemL][0]-1 ][0]) + (nodes[ elem[iElemL][1]-1 ][0]) + (nodes[ elem[iElemL][2]-1 ][0]));
+                double yCentroidL = (1/3)*((nodes[ elem[iElemL][0]-1 ][1]) + (nodes[ elem[iElemL][1]-1 ][1]) + (nodes[ elem[iElemL][2]-1 ][1]));
+                
+                Vector2d centroidL = {xCentroidL, yCentroidL};
+                
+                // centroid for right element
+                Vector2d centroidR;
+                
+                if(elemLR.size()>1){ // not on a boundary
+                    int iElemR = elemLR[1];
+                    double xCentroidR = (1/3)*((nodes[ elem[iElemR][0]-1 ][0]) + (nodes[ elem[iElemR][1]-1 ][0]) + (nodes[ elem[iElemR][2]-1 ][0]));
+                    double yCentroidR = (1/3)*((nodes[ elem[iElemR][0]-1 ][1]) + (nodes[ elem[iElemR][1]-1 ][1]) + (nodes[ elem[iElemR][2]-1 ][1]));
+                    centroidR = {xCentroidR, yCentroidR};
+                }
+                else{
+                    double dx = midpoint[0] - xCentroidL;
+                    double dy = midpoint[1] - yCentroidL;
+                    double xCentroidGhost = midpoint[0] + dx;
+                    double yCentroidGhost = midpoint[1] + dy;
+                    centroidR = {xCentroidGhost, yCentroidGhost};
+                }
+                
+                // Compute UL at the face midpoint
+                
+                vector<double> UL = U[iElemL];
+                
+                for(int iU = 0; iU < 4; iU++){
+                    double UL_add = grad_u[iElemL][iU].dot(midpoint-centroidL);
+                    UL[iU]+=UL_add;
+                }
+                
+                // Compute UR at the face midpoint
+                vector<double> UR;
+                if(elemLR.size()>1){ // not on a boundary
+                    int iElemR = elemLR[1];
+                    UR = U[iElemR];
+                    for(int iU = 0; iU < 4; iU++){
+                        double UR_add = grad_u[iElemR][iU].dot(midpoint-centroidR);
+                        UR[iU]+=UR_add;
+                    }
+                }
+                else{
+                    int dummy = 0;
+                    bool isWall = false;
+                    if(abs(n1x) < 100 && abs(n2x) < 100 && abs(n1y) < 100 && abs(n2y) < 100){
+                        isWall = true;
+                    }
+                    UR = computeBoundaryState(nodes, elem, U[iElem], iElem, dummy, isWall, Minf, alphaDeg, Bn, iLocal.index);
+                    for(int iU = 0; iU < 4; iU++){
+                        double UR_add = grad_u[iElemL][iU].dot(midpoint-centroidR); // same grad_u as left element ????
+                        UR[iU]+=UR_add;
+                    }
+                }
+                
+                // Call appropriate flux function
+                
+                if(opt == 1){
+                    output = roe(UL, UR, 1.4, n);
+                }
+            
+                else if (opt == 2){
+                    output = rusanov(UL, UR, 1.4, n);
+                }
+            
+                else if (opt == 3){
+                    output = HLLE(UL, UR, 1.4, n);
+                }
+                
+                vector<double> F = output.F;
+                double s = output.smag;
+                
+                // Increment and decrement the residuals
+                for(int j = 0; j < 4; j++){
+                    residuals[iElemL][j] += F[j]*length;
+                }
+                residuals[iElemL][4] += s*length;
+                
+                if(elemLR.size() > 1){
+                    int iElemR = elemLR[1];
+                    for(int j = 0; j < 4; j++){
+                        residuals[iElemR][j] -= F[j]*length;
+                    }
+                    residuals[iElemR][4] -= s*length; // I dont know what it means to add wave speed tallies on L and R cells
+                }
+            } // end for iElem
+        } // end for iFace
         
     }
     

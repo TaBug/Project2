@@ -92,6 +92,8 @@ vector<vector<int>> genGlobalEdge(vector<vector<double>> const &bounds, vector<v
 
 iGlobal2Local iG2L(int i, vector<vector<double>> const &bounds, vector<vector<double>> const &interiorFaces){
     
+    // i = 0-based global index
+    
     int niedge = int(interiorFaces.size());
     int nbedge = int(bounds.size());
     int ngedge = niedge + nbedge; // Number of global edges (total number of edges)

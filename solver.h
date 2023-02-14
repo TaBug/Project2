@@ -298,7 +298,7 @@ vector<Vector2d> compute_rN(vector<vector<double>> const &nodes, vector<vector<d
     
 }
 
-vector<Vector2d> barthJespersen(vector<vector<double>> const &nodes, vector<vector<double>> const &elem, vector<double> const &area, vector<vector<double>> const &U, int iCell, vector<int> const iNeighbor){
+vector<Vector2d> barthJespersen(vector<vector<double>> const &nodes, vector<vector<double>> const &elem, vector<double> const &area, vector<vector<double>> const &U, int iCell, vector<int> const iNeighbor, double Minf, double alphaDeg, vector<vector<double>> const &Bn, vector<vector<int>> const &elemBounds, vector<vector<double>> const &bounds, vector<vector<double>> const &interiorFaces, vector<int> const iFaces){
     // vector<vector<double>> uALL(4, vector<double>(4,0.0)); // EACH ROW REPRESENTS A SPECIFIC STATE VARIABLE (E.G DENSTIY)
     vector<vector<double>> uALL(4,vector<double>(1 + iNeighbor.size(),0.0));
     
@@ -332,7 +332,7 @@ vector<Vector2d> barthJespersen(vector<vector<double>> const &nodes, vector<vect
     vector<Vector2d> rN = compute_rN(nodes, elem, iCell);
     
     // Optain all L
-    vector<Vector2d> L = computeL(nodes, elem, U, iCell, iNeighbor);
+    vector<Vector2d> L = computeL(nodes, elem, U, iCell, iNeighbor, iFaces, Minf, alphaDeg, Bn, bounds, interiorFaces, elemBounds);
     
     // Obtain node states
     // Each row is a node and each col is a state variable
@@ -399,25 +399,182 @@ vector<Vector2d> barthJespersen(vector<vector<double>> const &nodes, vector<vect
 }
 
 
+vector<int> findAdjElem(vector<vector<double>> const &elem, vector<vector<double>> const &I2E, vector<vector<double>> const &B2E, vector<vector<int>> const &elemBounds, vector<vector<double>> const &bounds, vector<vector<double>> const &interiorFaces, vector<vector<int>> const &globalEdge, int iFaceGlobal){
+    
+    // COMPUTES THE L and R elems for an input face (if no adj element exists due to being on a boundary, negative value is used)
+    iGlobal2Local iLocal = iG2L(iFaceGlobal, bounds, interiorFaces);
+    vector<int> elemLR = {-1, -1};
+    
+    if(iLocal.isBound == false){ // interior edge
+        elemLR[0] = int(I2E[iLocal.index][0] - 1); // Left Element
+        elemLR[1] = int(I2E[iLocal.index][1] - 1); // Right Element
+    }
+    
+    else{ // boundary edge
+        elemLR[0] = int(B2E[iLocal.index][0] - 1); // Left Element
+        // No right element exists
+    }
+    
+    return elemLR; // RETURNING L and R ELEMENT TO EDGE IN BASE-0 INDEXING
+    
+}
 
 
-///
+vector<int> findNeighbors(vector<vector<double>> const &elem, vector<vector<double>> const &I2E, vector<vector<double>> const &B2E, vector<vector<int>> const &elemBounds, vector<vector<double>> const &bounds, vector<vector<double>> const &interiorFaces, vector<vector<int>> const &globalEdge, int iElem){
+    // iElem is 0-based
+    unordered_set<int> neighbors;
+    
+    // finding all edges surrounding an element
+    vector<int> edges = {elemBounds[iElem][0], elemBounds[iElem][1], elemBounds[iElem][1]};
+    
+    // populating the neighbor set
+    for(int iEdge = 0; iEdge < 3; iEdge++){
+        neighbors.insert(edges[iEdge]);
+    }
+    
+    // Populating vector containing all neighbor indices
+    vector<int> iNeighbors;
+    iNeighbors.insert(iNeighbors.end(), neighbors.begin(), neighbors.end());
+    
+    // If we are on a boundary, some edges do not have an adjacent element, therefore indicate this with negative values
+    if(iNeighbors.size() == 1){
+        iNeighbors.push_back(-1);
+        iNeighbors.push_back(-1);
+    }
+    else if (iNeighbors.size() == 2){
+        iNeighbors.push_back(-1);
+    }
+    
+    return iNeighbors;
+    
+}
+
+double computeEdgeLength(int iEdgeGlobal, vector<vector<int>> const &globalEdge, vector<vector<double>> const &nodes){
+    double n1x = nodes[globalEdge[iEdgeGlobal][0] - 1][0];
+    double n1y = nodes[globalEdge[iEdgeGlobal][0] - 1][1];
+    double n2x = nodes[globalEdge[iEdgeGlobal][1] - 1][0];
+    double n2y = nodes[globalEdge[iEdgeGlobal][1] - 1][1];
+    
+    double deltaL = sqrt(pow(n2x-n1x, 2) + pow(n2y-n1y, 2));
+    return deltaL;
+}
 
 
 // 2nd Order Finite Volume Driver
-void secondOrderFV( vector<vector<double>> &U, int nelem, int nfaces){
+void secondOrderFV(int opt, vector<vector<double>> &U, vector<double> const &area ,vector<vector<double>> const &nodes, vector<vector<double>> const &elem, double Minf, double alphaDeg, vector<vector<double>> const &Bn, vector<vector<double>> const &In, vector<vector<int>> const &elemBounds, vector<vector<double>> const &bounds, vector<vector<double>> const &interiorFaces, vector<vector<int>> const &globalEdge, vector<vector<double>> const &I2E, vector<vector<double>> const &B2E){
     
+    int nelem = int(elem.size());
+    int nfaces = int(globalEdge.size());
     double residual;;
     // double residual = computeL1ResidualNorm();
     
-    while(abs(residual) > pow(10,-5)){
+    while(abs(residual) > pow(10,-5)){ // TODO: Change
         
-        vector<double> grad_u(nelem,0);
-        for(int i = 0; i < nfaces; i++){
+        Vector2d zeros = {0.0,0.0};
+        vector<vector<Vector2d>> grad_u(nelem,vector<Vector2d>(4,zeros));
+        
+        for(int iElem = 0; iElem < nelem; iElem++){
+            
+            vector<int> iNeighbor;
+            // Finding iNeighbor (all neighboring elements) and iFaces (local indices of edges adjacent to neighbor)
+            vector<int> globalFaceIndices = {elemBounds[iElem][0], elemBounds[iElem][1], elemBounds[iElem][2]}; // global face indices for edges with local face 1, 2, and 3, respectively
+            
+            for(int iFace = 0; iFace < 3; iFace++){
+                vector<int> adjElems = findAdjElem(elem, I2E, B2E, elemBounds, bounds, interiorFaces, globalEdge, globalFaceIndices[iFace]);
+                auto it = find(adjElems.begin(), adjElems.end(), iElem);
+                adjElems.erase(it);
+                if(!adjElems.empty()){
+                    iNeighbor.push_back(adjElems[0]);
+                }
+                else{
+                    iNeighbor.push_back(-1);
+                }
+            }
+            
+            vector<int> iFaces = {1,2,3};
             
             
+            for(int iF = 0; iF < 3; iF++){ // Iterating through each element's three faces
+                
+                // Generating appropriate indices
+                int iFaceGlobal = elemBounds[iElem][iF];
+                iGlobal2Local iLocal = iG2L(iFaceGlobal, bounds, interiorFaces);
+                int iFaceLocal = iLocal.index;
+                
+                // Finding the Left and Right elements
+                vector<int> elemLR = findAdjElem(elem, I2E, B2E, elemBounds, bounds, interiorFaces, globalEdge, iFaceGlobal);
+                
+                // Initializing the normal vector pointing from L to R
+                Vector2d n;
+                
+                if(iLocal.isBound == false){ // interior edge
+                    n = {In[iFaceLocal][0], In[iFaceLocal][1]};
+                }
+                else{ // boundary edge
+                    n = {Bn[iFaceLocal][0], Bn[iFaceLocal][1]};
+                }
+                
+                // Gradient calculation
+                
+                
+                /// BARTH JESPERSEN
+                
+                // vector<Vector2d> L = barthJespersen(nodes, elem, area, U, iElem, iNeighbor, Minf, alphaDeg, Bn, elemBounds, bounds, interiorFaces, iFaces)
+                
+                /// MP LIMITER (LCD)
+                vector<Vector2d> L_input = computeL(nodes, elem, U, iElem, iNeighbor, iFaces, Minf, alphaDeg, Bn, bounds, interiorFaces, elemBounds);
+                
+                vector<Vector2d> L = computeL_LCD(L_input, U, nodes, elem, iElem, iNeighbor, iFaces, Minf, alphaDeg, Bn, elemBounds, bounds, interiorFaces);
+                
+                /// NO LIMITER
+                
+                vector<Vector2d> L_TEMP = L_input;
+                /// END GRADIENT COMPUTATION
+                
+                // Compute face length
+                double delta_l = computeEdgeLength(iFaceGlobal, globalEdge, nodes);
+                
+                // Find u_hat (the average of the L and R cell averages)
+                    // TODO: do this
+                vector<double> UL = U[elemLR[0]];
+                vector<double> UR = U[elemLR[1]];
+                vector<double> Uhat;
+                Uhat.reserve(UL.size());
+                
+                for(int iU = 0; iU < UL.size(); iU++){
+                    Uhat.emplace_back(0.5*(UL[iU]+UR[iU]));
+                }
+                
+                
+                // Add u_hat*n*delta_l to gradient value in vector for L elem and subtract this for the right element (if existing)
+                    // TODO: do this
+                
+                for(int iU = 0; iU < UL.size(); iU++){
+                    Uhat.emplace_back(0.5*(UL[iU]+UR[iU]));
+                }
+                
+                // Adding u_hat*n*delta_l to elemL and subtracting from elemR
+                for(int iU = 0; iU < UL.size(); iU++){
+                    int iElemL = elemLR[0];
+                    int iElemR = elemLR[1];
+                    Vector2d gradU_add = {n[0]*Uhat[iU]*delta_l,n[1]*Uhat[iU]*delta_l};
+                    grad_u[iElemL][iU] += gradU_add;
+                    grad_u[iElemR][iU] -= gradU_add;
+                }
+                
+                
+            } // end for iFace
             
+        } // end for iElem
+        
+        // Dividing each grad_u by its element area
+        for(int iElem = 0; iElem < nelem; iElem++){
+            for(int iU = 0; iU < 4; iU++){
+                grad_u[iElem][iU] /= area[iElem];
+            }
         }
+        
+        // Initialize Residual and Wave Speed on Each Cell to be Zero
         
         
     }

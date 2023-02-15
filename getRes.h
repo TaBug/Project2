@@ -12,7 +12,7 @@ vector<vector<double>> getRes(int &nelem,int &opt,vector<vector<double>> &u, vec
     vector<double> F(4);
 
     // set flux function based on user choice
-    structFlux (*flux)(vector<double>& UL, vector<double>& UR, double gamma, vector<double>& n);
+    /*structFlux (*flux)(vector<double>& UL, vector<double>& UR, double gamma, vector<double>& n);
     structFlux output;
     if (opt == 1){
         flux = roe;
@@ -22,7 +22,7 @@ vector<vector<double>> getRes(int &nelem,int &opt,vector<vector<double>> &u, vec
     }
     else if (opt == 3){
         flux = hlle;
-    }
+    }*/
 
     // loop over interior edges
     for (int i = 0; i < interiorFaces.size(); i++){
@@ -49,7 +49,15 @@ vector<vector<double>> getRes(int &nelem,int &opt,vector<vector<double>> &u, vec
 
             // call chosen flux function to compute flux and wave speed using
             // left state, right state, gamma (1.4), and normal vector
-            output = flux(uL,uR,1.4,n);
+            if (opt == 1){
+                output = roe(uL,uR,1.4,n);
+            }
+            else if (opt == 2){
+                output = rusanov(uL,uR,1.4,n);
+            }
+            else if (opt == 3){
+                output = HLLE(uL,uR,1.4,n);
+            }
             F = output.F;
             s = output.smag;
 

@@ -60,7 +60,7 @@ def FluxFunction(UL, UR, gamma, n):
     # Roe average
     di     = np.sqrt(rR/rL)
     d1     = 1.0/(1.0+di)
-    
+
     ui     = (di*uR + uL)*d1
     vi     = (di*vR + vL)*d1
     Hi     = (di*HR + HL)*d1
@@ -73,11 +73,11 @@ def FluxFunction(UL, UR, gamma, n):
         c2 = -c2
     ci     = np.sqrt(c2)
     ci1    = 1.0/ci
-    
+
     # eigenvalues
     l = np.zeros(3)
     l[0] = ucp+ci; l[1] = ucp-ci; l[2] = ucp
-    
+
     # entropy fix
     epsilon = ci*.1
     for i in range(3):
@@ -104,7 +104,7 @@ def FluxFunction(UL, UR, gamma, n):
     F[1]    = 0.5*(FL[1]+FR[1])-0.5*(l3*du[1] + C1*ui + C2*n[0])
     F[2]    = 0.5*(FL[2]+FR[2])-0.5*(l3*du[2] + C1*vi + C2*n[1])
     F[3]    = 0.5*(FL[3]+FR[3])-0.5*(l3*du[3] + C1*Hi + C2*ucp  )
-    
+
     # max wave speed
     smag = max(l)
 
@@ -131,9 +131,9 @@ def WallFlux(UL, gamma, n):
     if rL<0: rL = -rL
     rHL = UL[3] + pL;
     cL = np.sqrt(gamma*pL/rL);
-    
+
     smag = abs(unL) + cL;
-    
+
     F = np.zeros(4)
     F[1] = pL*n[0];
     F[2] = pL*n[1];

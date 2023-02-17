@@ -317,10 +317,10 @@ structFlux HLLE(vector<double>& UL, vector<double>& UR, double gamma, vector<dou
 	double smag;
 	double smax;
 	double smin;
-	double sLmax = (velL[0]*n[0]+velL[1]*n[1]) + cL;
-	double sRmax = (velR[0]*n[0]+velR[1]*n[1])+ cR;
-	double sLmin = (velL[0]*n[0]+velL[1]*n[1]) - cL;
-	double sRmin = (velR[0]*n[0]+velR[1]*n[1])- cR;
+	double sLmax = abs(velL[0]*n[0]+velL[1]*n[1]) + cL;
+	double sRmax = abs(velR[0]*n[0]+velR[1]*n[1])+ cR;
+	double sLmin = abs(velL[0]*n[0]+velL[1]*n[1]) - cL;
+	double sRmin = abs(velR[0]*n[0]+velR[1]*n[1])- cR;
 	//smax
 	if (sLmax<0 && sRmax<0){
 		smax=0;
@@ -341,7 +341,12 @@ structFlux HLLE(vector<double>& UL, vector<double>& UR, double gamma, vector<dou
 		smin = sLmin;
 	}
 		}	
-	
+	/*if (abs(velL[0]*n[0]+velL[1]*n[1]) > abs(velR[0]*n[0]+velR[1]*n[1])){
+		smag=abs(velL[0]*n[0]+velL[1]*n[1]) + cL;
+	}
+	else{
+		smag=abs(velR[0]*n[0]+velR[1]*n[1]) + cR;
+	}*/
 	smag=smax;	
 	
 	// flux assembly

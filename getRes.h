@@ -99,11 +99,19 @@ vector<vector<double>> getRes(int &nelem,int &opt,vector<vector<double>> &u, vec
         // call flux function depending on boundary type, computes Flux and wave speed
         structFlux output;
         if (B2E[i][2] == 4){
-            output = roe(free,uTemp,gamma,n);
+            if (opt == 1){
+                output = roe(free,uTemp,gamma,n);
+            }
+            else if (opt == 2){
+                output = rusanov(free,uTemp,gamma,n);
+            }
+            else if (opt == 3){
+                output = HLLE(free,uTemp,gamma,n);
+            }
         }
         else {
             output = wallFlux(uTemp,n,gamma);
-            //output = roe(free,uTemp,gamma,n);
+            //output = HLLE(free,uTemp,gamma,n);
         }
         F = output.F;
         s = output.smag;

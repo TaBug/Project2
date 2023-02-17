@@ -99,19 +99,18 @@ vector<vector<double>> getRes(int &nelem,int &opt,vector<vector<double>> &u, vec
         // call flux function depending on boundary type, computes Flux and wave speed
         structFlux output;
         if (B2E[i][2] == 4){
-            output = roe(uTemp,free,gamma,n);
+            output = roe(free,uTemp,gamma,n);
         }
         else {
-           //output = wallFlux(uTemp,n,gamma);
-             output = roe(uTemp,free,gamma,n);
-
+            output = wallFlux(uTemp,n,gamma);
+            //output = roe(free,uTemp,gamma,n);
         }
         F = output.F;
         s = output.smag;
 
         // add F*length to residual
         for (int j = 0; j < 4; j++){
-            residual[elem][j] += F[j]*length;
+            residual[elem][j] -= F[j]*length;
         }
         // add wave speed
         residual[elem][4] += s*length;

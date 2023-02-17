@@ -50,8 +50,7 @@ void FVM_1st(vector<vector<double>> &bounds,vector<vector<double>> &nodes,vector
                 u[i][j] = u[i][j] - (dt*residual[i][j]); // update state
             }  
         }
-        cout << t << "\n";
+        //cout << t << "\n";
     }
     
     return;
-}

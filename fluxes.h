@@ -117,7 +117,7 @@ structFlux roe(vector<double>& UL, vector<double>& UR, double gamma, vector<doub
 		}
 	}
 
-	l = abs(l); l3 = l[2];
+	l = absolute(l); l3 = l[2];
 
 	double s1, s2, G1, G2, C1, C2;
 	// average and half-difference of 1st and 2nd eigs
@@ -359,7 +359,7 @@ structFlux HLLE(vector<double>& UL, vector<double>& UR, double gamma, vector<dou
 
 structFlux wallFlux(vector<double> &u,vector<double> &n,double &gam){
 	vector<double> v(2);
-    	vector<double> vb(2);
+    vector<double> vb(2);
    	vector<double> F(4);
     	double pb;
     	double smag;
@@ -369,11 +369,11 @@ structFlux wallFlux(vector<double> &u,vector<double> &n,double &gam){
     	vb[0] = v[0] - (v[0]*n[0] + v[1]*n[1])*n[0];
     	vb[1] = v[1] - (v[0]*n[0] + v[1]*n[1])*n[1];
 
-    	pb = (gam-1.4)*(u[3] - .5*u[0]*sqrt(pow(vb[0],2) + pow(vb[1],2)));
+    	pb = (gam-1)*(u[3] - .5*u[0]*sqrt(pow(vb[0],2) + pow(vb[1],2)));
 
     	F = {0,pb*n[0],pb*n[1],0};
     
-    	smag = abs(v[0]*n[0] + v[1]*n[1] + sqrt(9.81*pb/u[0]));
+    	smag = abs(v[0]*n[0] + v[1]*n[1] + sqrt(gam*pb/u[0]));
     
     	structFlux output;
 	output.F = F;

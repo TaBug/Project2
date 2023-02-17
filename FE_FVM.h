@@ -6,7 +6,7 @@
 
 using namespace std;
 
-void FVM_1st(vector<vector<double>> &bounds,vector<vector<double>> &nodes,vector<vector<double>> &interiorFaces,vector<vector<double>> &u,vector<vector<double>> &B2E,vector<vector<double>> &Bn,vector<vector<double>> &In,int &nelem, vector<double> &Area){
+void FVM_1st(vector<vector<double>> &bounds,vector<vector<double>> &nodes,vector<vector<double>> &interiorFaces,vector<vector<double>> &u,vector<vector<double>> &B2E,vector<vector<double>> &Bn,vector<vector<double>> &In,int &nelem){
     double CFL;
     int opt;
     int time;
@@ -24,7 +24,7 @@ void FVM_1st(vector<vector<double>> &bounds,vector<vector<double>> &nodes,vector
     cin >> time;
 
     // Loop through for maximum number of time iterations (100,000)
-     for (int t = 0; t < time; t++){
+    timeStep: for (int t = 1; t < time; t++){
         // initialize L1 Residual and Residual to 0 every time iteration
         vector<vector<double>> residual(nelem,vector<double>(4));
         double resL1 = 0;
@@ -38,6 +38,7 @@ void FVM_1st(vector<vector<double>> &bounds,vector<vector<double>> &nodes,vector
                 resL1 += abs(residual[i][j]);
             }
         }
+        //cout << resL1 << "\n";
         if (resL1 < pow(10,-5)){
                 break;
         }
@@ -45,15 +46,12 @@ void FVM_1st(vector<vector<double>> &bounds,vector<vector<double>> &nodes,vector
         // update state using Forward Euler (first order accurate)
         for (int i = 0; i < nelem; i++){
             double dt = (2*CFL)/residual[i][4]; // calculate local time step
-          //  cout<<Area[i]<<endl;
             for (int j = 0; j < 4; j++){
                 u[i][j] = u[i][j] - (dt*residual[i][j]); // update state
-                if (j==3) {
-                //cout<<residual[i][j]<<endl;
-                }
             }  
         }
+        cout << t << "\n";
     }
+    
     return;
 }
-

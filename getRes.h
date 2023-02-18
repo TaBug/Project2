@@ -9,8 +9,12 @@ vector<vector<double>> getRes(int &nelem,int &opt,vector<vector<double>> &u, vec
     vector<double> F(4);
     double s;
     vector<double> n(2);
-    vector<double> F(4);
-
+   
+    vector<double> free(4);
+       free[0]=1;
+    free[1]=.25*cos(8*3.14159/180);
+    free[2]=.25*sin(8*3.14159/180);
+    free[3]=1/(.4*1.4)+.25*.25/2;
     // set flux function based on user choice
     /*structFlux (*flux)(vector<double>& UL, vector<double>& UR, double gamma, vector<double>& n);
     structFlux output;
@@ -23,7 +27,7 @@ vector<vector<double>> getRes(int &nelem,int &opt,vector<vector<double>> &u, vec
     else if (opt == 3){
         flux = hlle;
     }*/
-
+ 
     // loop over interior edges
     for (int i = 0; i < interiorFaces.size(); i++){
             int elemL = interiorFaces[i][2] - 1; // set element left of edge
@@ -45,10 +49,11 @@ vector<vector<double>> getRes(int &nelem,int &opt,vector<vector<double>> &u, vec
             // calculate length of edge
             int node1 = interiorFaces[i][0] - 1;
             int node2 = interiorFaces[i][1] - 1;\
-            double length = sqrt(pow(nodes[node1][0]+nodes[node2][0],2) + pow(nodes[node1][1]+nodes[node2][1],2));
+            double length = sqrt(pow(nodes[node1][0]-nodes[node2][0],2) + pow(nodes[node1][1]-nodes[node2][1],2));
 
             // call chosen flux function to compute flux and wave speed using
             // left state, right state, gamma (1.4), and normal vector
+            structFlux output;
             if (opt == 1){
                 output = roe(uL,uR,1.4,n);
             }
@@ -84,29 +89,36 @@ vector<vector<double>> getRes(int &nelem,int &opt,vector<vector<double>> &u, vec
         // set temporary holder to element state
         for (int j = 0; j < 4; j++){
             uTemp[j] = u[elem][j];
-        }
+        } 
         
         // calculate length of edge
         int node1 = bounds[i][0] - 1;
         int node2 = bounds[i][1] - 1;
-        double length = sqrt(pow(nodes[node1][0]+nodes[node2][0],2) + pow(nodes[node1][1]+nodes[node2][1],2));
-
+        double length = sqrt(pow(nodes[node1][0]-nodes[node2][0],2) + pow(nodes[node1][1]-nodes[node2][1],2));
+        double gamma=1.4;
         // call flux function depending on boundary type, computes Flux and wave speed
-        if (B2E[i][2] == 4 && (nodes[node1][0] == -100 && nodes[node2][0] == -100)){
-            output = inflowFlux(uTemp,n);
-        }
-        else if (B2E[i][2] == 4 && (nodes[node1][0] != -100 && nodes[node2][0] != -100)){
-            output = outFlowFlux(uTemp,n);
+        structFlux output;
+        if (B2E[i][2] == 4){
+            if (opt == 1){
+                output = roe(free,uTemp,gamma,n);
+            }
+            else if (opt == 2){
+                output = rusanov(free,uTemp,gamma,n);
+            }
+            else if (opt == 3){
+                output = HLLE(free,uTemp,gamma,n);
+            }
         }
         else {
-            output = wallFlux(uTemp,n);
+            output = wallFlux(uTemp,n,gamma);
+            //output = HLLE(free,uTemp,gamma,n);
         }
         F = output.F;
         s = output.smag;
 
         // add F*length to residual
         for (int j = 0; j < 4; j++){
-            residual[elem][j] += F[j]*length;
+            residual[elem][j] -= F[j]*length;
         }
         // add wave speed
         residual[elem][4] += s*length;

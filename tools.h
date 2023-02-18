@@ -23,7 +23,7 @@ double max(vector<double>& v) {
 	return output;
 }
 
-vector<double> abs(const vector<double>& v) {
+vector<double> absolute(const vector<double>& v) {
 	vector<double> output(v.size());
 	for (int i = 0; i < v.size(); i++) {
 		if (v[i] < 0) {

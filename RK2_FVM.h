@@ -1,22 +1,34 @@
+//
+//  RK2_FVM.h
+//  p2-AEROSP-623
+//
+//  Created by Jake Yeaman on 2/17/23.
+//
+
+#ifndef RK2_FVM_h
+#define RK2_FVM_h
+
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include <solver.h>
+#include "solver.h"
 
 using namespace std;
 
-void rk2(vector<vector<double>> &u, vector<vector<double>> &residual,int &nelem){
+void rk2(int opt, vector<vector<double>> &u, vector<double> const &area ,vector<vector<double>> const &nodes, vector<vector<double>> const &elem, double Minf, double alphaDeg, vector<vector<double>> const &Bn, vector<vector<double>> const &In, vector<vector<int>> const &elemBounds, vector<vector<double>> const &bounds, vector<vector<double>> const &interiorFaces, vector<vector<int>> const &globalEdge, vector<vector<double>> const &I2E, vector<vector<double>> const &B2E, string limiterType, double convergedVal, vector<double>const &Area, int nelem, double CFL){
     vector<vector<double>> f0(nelem,vector<double>(4));
     vector<vector<double>> f1(nelem,vector<double>(4));
+    
+    double residSum = DBL_MAX;
 
-    for{
+    while(residSum > convergedVal){
         // initialize L1 Residual and Residual to 0 every time iteration
         vector<vector<double>> residual(nelem,vector<double>(4));
         vector<vector<double>> residual2(nelem,vector<double>(4));
         double resL1 = 0;
 
         // calculate residual of each element
-        residual = secondOrderFV(opt,u,Area,nodes,elem,Minf,alphaDeg,Bn,In,elemBounds,bounds,interiorFaces,globalEdge,I2E,B2E);
+        residual = secondOrderFV(opt, u, Area, nodes, elem, Minf, alphaDeg, Bn, In, elemBounds, bounds, interiorFaces, globalEdge, I2E, B2E, limiterType);
         
         // calculate L1 Residual and stop calculation if < 10e-5
         for (int i = 0; i < nelem; i++){
@@ -28,6 +40,8 @@ void rk2(vector<vector<double>> &u, vector<vector<double>> &residual,int &nelem)
                 break;
         }
         
+        vector<vector<double>> f0(nelem,vector<double>(4,0));
+        vector<vector<double>> uf0(nelem,vector<double>(4,0));
         // first step of RK2
         for (int i = 0; i < nelem; i++){
             double dt = (2*Area[i]*CFL)/residual[i][4]; // calculate local time step
@@ -35,13 +49,12 @@ void rk2(vector<vector<double>> &u, vector<vector<double>> &residual,int &nelem)
             // find f0 and use it to find uf0 which is used for next step of RK2
             for (int j = 0; j < 4; j++){
                 f0[i][j] = -residual[i][j]/Area[i];
-
-                uf0[i][j] = u[i][j] + dt*f0[j];
+                uf0[i][j] = u[i][j] + dt*f0[i][j];
             }
         }
 
         // calculate residuals for the state uf0
-        residual2 = secondOrderFV();
+        residual2 = secondOrderFV(opt, uf0, Area, nodes, elem, Minf, alphaDeg, Bn, In, elemBounds, bounds, interiorFaces, globalEdge, I2E, B2E, limiterType);
 
         // second step of RK2
         for (int i = 0; i < nelem; i++){
@@ -58,3 +71,5 @@ void rk2(vector<vector<double>> &u, vector<vector<double>> &residual,int &nelem)
     }
 
 }
+
+#endif /* RK2_FVM_h */

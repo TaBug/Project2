@@ -323,10 +323,32 @@ vector<Vector2d> barthJespersen(vector<vector<double>> const &nodes, vector<vect
 
     // Populating uALL for neighbors
     for(int i = 0; i < iNeighbor.size(); i++){
-        uALL[0][i+1] = U[iNeighbor[i]][0];
-        uALL[1][i+1] = U[iNeighbor[i]][1];
-        uALL[2][i+1] = U[iNeighbor[i]][2];
-        uALL[3][i+1] = U[iNeighbor[i]][3];
+        
+        if(iNeighbor[i] < 0){ // Boundary
+            if(iNeighbor[i] == -1){ // freestream
+                vector<double> uFS = computeFreestreamState(Minf, alphaDeg);
+                uALL[0][i+1] = uFS[0];
+                uALL[1][i+1] = uFS[1];
+                uALL[2][i+1] = uFS[2];
+                uALL[3][i+1] = uFS[3];
+            }
+            else{ // wall
+                int iFaceGlobal = elemBounds[iCell][iFaces[i]-1];
+                iGlobal2Local iFaceInfo = iG2L(iFaceGlobal, bounds, interiorFaces);
+                int iFaceLocal = iFaceInfo.index;
+                vector<double> uWall = computeBoundaryState(nodes, elem, U[iCell], true, Minf, alphaDeg, Bn, iFaceLocal);
+                uALL[0][i+1] = uWall[0];
+                uALL[1][i+1] = uWall[1];
+                uALL[2][i+1] = uWall[2];
+                uALL[3][i+1] = uWall[3];
+            }
+        }
+        else{
+            uALL[0][i+1] = U[iNeighbor[i]][0];
+            uALL[1][i+1] = U[iNeighbor[i]][1];
+            uALL[2][i+1] = U[iNeighbor[i]][2];
+            uALL[3][i+1] = U[iNeighbor[i]][3];
+        }
     }
 
     vector<double> uMAX(4,0.0);
@@ -420,7 +442,7 @@ vector<int> findAdjElem(vector<vector<double>> const &elem, vector<vector<double
 
     if(iLocal.isBound == false){ // interior edge
         elemLR[0] = int(I2E[iLocal.index][0] - 1); // Left Element
-        elemLR[1] = int(I2E[iLocal.index][1] - 1); // Right Element
+        elemLR[1] = int(I2E[iLocal.index][2] - 1); // Right Element
     }
 
     else{ // boundary edge
@@ -474,7 +496,11 @@ double computeEdgeLength(int iEdgeGlobal, vector<vector<int>> const &globalEdge,
 
 
 // 2nd Order Finite Volume Driver
-void secondOrderFV(int opt, vector<vector<double>> &U, vector<double> const &area ,vector<vector<double>> const &nodes, vector<vector<double>> const &elem, double Minf, double alphaDeg, vector<vector<double>> const &Bn, vector<vector<double>> const &In, vector<vector<int>> const &elemBounds, vector<vector<double>> const &bounds, vector<vector<double>> const &interiorFaces, vector<vector<int>> const &globalEdge, vector<vector<double>> const &I2E, vector<vector<double>> const &B2E, string limiterType){
+vector<vector<double>> secondOrderFV(int opt, vector<vector<double>> &U, vector<double> const &area ,vector<vector<double>> const &nodes, vector<vector<double>> const &elem, double Minf, double alphaDeg, vector<vector<double>> const &Bn, vector<vector<double>> const &In, vector<vector<int>> const &elemBounds, vector<vector<double>> const &bounds, vector<vector<double>> const &interiorFaces, vector<vector<int>> const &globalEdge, vector<vector<double>> const &I2E, vector<vector<double>> const &B2E, string limiterType){
+    // limiterType must be one of the following:
+        // "BJ"
+        // "MP"
+        // "NONE"
 
     int nelem = int(elem.size());
     int nfaces = int(globalEdge.size());
@@ -487,7 +513,7 @@ void secondOrderFV(int opt, vector<vector<double>> &U, vector<double> const &are
     // set the flux to use
     structFlux output;
 
-    while(abs(residual) > pow(10,-5)){ // TODO: Change
+    // while(abs(residual) > pow(10,-5)){ // TODO: Change
 
         Vector2d zeros = {0.0,0.0};
         vector<vector<Vector2d>> grad_u(nelem,vector<Vector2d>(4,zeros));
@@ -505,13 +531,13 @@ void secondOrderFV(int opt, vector<vector<double>> &U, vector<double> const &are
             // Obtaining elemL and elemR indices
             if(isBoundFace == false){
 
-                iElemL = I2E[iFaceLocal][0];
-                iElemR = I2E[iFaceLocal][2];
+                iElemL = I2E[iFaceLocal][0] - 1;
+                iElemR = I2E[iFaceLocal][2] - 1;
 
             }
             else{ // if isBoundFace == true
 
-                iElemL = B2E[iFaceLocal][0];
+                iElemL = B2E[iFaceLocal][0] - 1;
                 iElemR = -1;
 
             }
@@ -521,18 +547,34 @@ void secondOrderFV(int opt, vector<vector<double>> &U, vector<double> const &are
             vector<int> globalFaceIndices = {elemBounds[iElemL][0], elemBounds[iElemL][1], elemBounds[iElemL][2]};
             // For each face, find the two elements bounding the face, and push the element which is not elemL into iNeighbor
             for(int iF = 0; iF < 3; iF++){
-
+                
+                if(iFace == 17){
+                    int stip = 1; 
+                }
+                
                 vector<int> adjElems = findAdjElem(elem, I2E, B2E, elemBounds, bounds, interiorFaces, globalEdge, globalFaceIndices[iF]);
                 auto it = find(adjElems.begin(), adjElems.end(), iElemL);
+                
                 adjElems.erase(it);
-                if(!adjElems.empty()){
-
+                if(adjElems.size() == 1 && adjElems[0] >= 0){
+                    // !adjElems.empty()
                     iNeighbor.push_back(adjElems[0]);
 
                 }
                 else{
-
-                    iNeighbor.push_back(-1);
+                    if(adjElems.size()!=1){
+                        int stopper = -1; 
+                    }
+                    
+                    iGlobal2Local neighborBoundFace = iG2L(globalFaceIndices[iF], bounds, interiorFaces);
+                    int iNeighborFaceLocal = neighborBoundFace.index;
+                    if(bounds[iNeighborFaceLocal][2] == 4){ // freestream
+                        iNeighbor.push_back(-1);
+                    }
+                    else{ // wall
+                        iNeighbor.push_back(-2);
+                    }
+                    
 
                 }
 
@@ -577,7 +619,7 @@ void secondOrderFV(int opt, vector<vector<double>> &U, vector<double> const &are
             else{
 
                 cout << "Valid Limiter Type not Used\n";
-                return;
+                return vector<vector<double>>(0);
 
             }
 
@@ -655,8 +697,8 @@ void secondOrderFV(int opt, vector<vector<double>> &U, vector<double> const &are
             // Obtaining elemL and elemR indices
             if(isBoundFace == false){
 
-                iElemL = I2E[iFaceLocal][0];
-                iElemR = I2E[iFaceLocal][2];
+                iElemL = I2E[iFaceLocal][0] - 1;
+                iElemR = I2E[iFaceLocal][2] - 1;
 
             }
             else{ // if isBoundFace == true
@@ -762,7 +804,7 @@ void secondOrderFV(int opt, vector<vector<double>> &U, vector<double> const &are
             }
 
             vector<double> F = output.F;
-            double s = output.smag;
+            s = output.smag;
 
             // Increment and decrement the residuals
             for(int j = 0; j < 4; j++){
@@ -782,12 +824,13 @@ void secondOrderFV(int opt, vector<vector<double>> &U, vector<double> const &are
             }
 
         } // end for iFaceGlobal
-
-
+        
         //  Calculate L1 Residual norm
         residual = computeL1ResidualNorm(residuals);
         L1ResidualNorms.push_back(residual);
-    }
+    // }
+    
+    return residuals;
 
 }
 

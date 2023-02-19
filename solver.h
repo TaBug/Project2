@@ -7,7 +7,6 @@
 
 #ifndef solver_h
 #define solver_h
-#define _USE_MATH_DEFINES
 
 #include <iostream>
 #include <iomanip>
@@ -22,6 +21,7 @@
 #include <algorithm>
 #include "elem2Edge.h"
 #include "fluxes.h"
+
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
@@ -47,7 +47,7 @@ double computeL1ResidualNorm(vector<vector<double>> &residuals){
 vector<double> computeFreestreamState(double Minf, double alphaDeg){
     double alphaRad = alphaDeg * M_PI / 180.0;
     double gamma = 1.4;
-    vector<double> uInf = { 1.0, Minf * cos(alphaRad), Minf * sin(alphaRad), (1 / (gamma * gamma - gamma)) + 0.5 * (Minf * Minf) };
+    vector<double> uInf = {1.0, Minf*cos(alphaRad), Minf*sin(alphaRad), (1/(gamma*gamma-gamma))+0.5*(Minf*Minf)};
     return uInf;
 }
 
@@ -71,15 +71,17 @@ vector<Vector3d> computeP(vector<vector<double>> const &nodes, vector<vector<dou
     return P;
 }
 
-vector<double> computeBoundaryState(vector<vector<double>> const& nodes, vector<vector<double>> const& elem, vector<double> const& U_cell, bool isWall, double Minf, double alphaDeg, vector<vector<double>> const& Bn, int iBound) {
+vector<double> computeBoundaryState(vector<vector<double>> const &nodes, vector<vector<double>> const &elem, vector<double> const &U_cell, bool isWall, double Minf, double alphaDeg, vector<vector<double>> const &Bn, int iBound){
+
     vector<double> U_ghost;
     U_ghost.reserve(4);
-    if (isWall == true) { // Wall Boundary
+
+    if(isWall == true){ // Wall Boundary
         double rho = U_cell[0];
-        Vector2d vCell = { U_cell[1] / rho,U_cell[2] / rho };
-        Vector2d n = { Bn[iBound][0],Bn[iBound][1] };
-        Vector2d vb = vCell - (vCell.dot(n)) * n;
-        U_ghost = { rho, rho * vb[0], rho * vb[1], U_cell[3] };
+        Vector2d vCell = {U_cell[1]/rho,U_cell[2]/rho};
+        Vector2d n = {Bn[iBound][0],Bn[iBound][1]};
+        Vector2d vb = vCell - (vCell.dot(n))*n;
+        U_ghost = {rho, rho*vb[0], rho*vb[1], U_cell[3]};
     }
     else{ // Freestream
         U_ghost = computeFreestreamState(Minf, alphaDeg);
@@ -227,7 +229,7 @@ vector<Vector2d> computeL_LCD(vector<Vector2d> L, vector<vector<double>> const &
     for(int i = 0; i < 3; i++){
 
         vector<size_t> nodeIndices = {0,1,2}; // representing localface 1, 2, and 3.
-        nodeIndices.erase(nodeIndices.begin() + (iFaces[i] - 1)); // removing local face index so our two remaining indices correspond to the index of edge nodes
+        nodeIndices.erase(nodeIndices.begin() + (iFaces[i])); // removing local face index so our two remaining indices correspond to the index of edge nodes
 
         int ik = iNeighbor[i]; // cellk index
         vector<double> edgeMidpoint;
@@ -236,7 +238,7 @@ vector<Vector2d> computeL_LCD(vector<Vector2d> L, vector<vector<double>> const &
             edgeMidpoint = {(nodes[elem[iCell][nodeIndices[0]]-1][0] + nodes[elem[iCell][nodeIndices[1]]-1][0])/2, (nodes[elem[iCell][nodeIndices[0]]-1][1] + nodes[elem[iCell][nodeIndices[1]]-1][1])/2}; // cell0 and boundary edge interface midpoint
         }
         else{ // If not on a boundary
-            edgeMidpoint = {(nodes[elem[ik][nodeIndices[0]]-1][0] + nodes[elem[ik][nodeIndices[1]]-1][0])/2, (nodes[elem[ik][nodeIndices[0]]-1][1] + nodes[elem[ik][nodeIndices[1]]-1][1])/2}; // cell0 and cellk edge interface midpoint
+            edgeMidpoint = {(nodes[elem[iCell][nodeIndices[0]]-1][0] + nodes[elem[iCell][nodeIndices[1]]-1][0])/2, (nodes[elem[iCell][nodeIndices[0]]-1][1] + nodes[elem[iCell][nodeIndices[1]]-1][1])/2}; // cell0 and cellk edge interface midpoint
         }
 
         Vector2d r0k(edgeMidpoint[0] - cellCentroid[0],edgeMidpoint[1] - cellCentroid[1]);
@@ -280,10 +282,12 @@ vector<Vector2d> computeL_LCD(vector<Vector2d> L, vector<vector<double>> const &
             }
         }
 
+
     }
 
+    Llcd=L;
     for(int i = 0; i < alpha.size(); i++){
-        Llcd.emplace_back(alpha[i]*L[i]);
+        Llcd[i]*= alpha[i];
     }
 
     return Llcd;
@@ -496,7 +500,7 @@ vector<int> findAdjElem(vector<vector<double>> const &elem, vector<vector<double
 }
 
 
-vector<int> findNeighbors(vector<vector<double>> const& elem, vector<vector<double>> const& I2E, vector<vector<double>> const& B2E, vector<vector<int>> const& elemBounds, vector<vector<double>> const& bounds, vector<vector<double>> const& interiorFaces, vector<vector<int>> const& globalEdge, int iElem) {
+vector<int> findNeighbors(vector<vector<double>> const &elem, vector<vector<double>> const &I2E, vector<vector<double>> const &B2E, vector<vector<int>> const &elemBounds, vector<vector<double>> const &bounds, vector<vector<double>> const &interiorFaces, vector<vector<int>> const &globalEdge, int iElem){
     // iElem is 0-based
     unordered_set<int> neighbors;
 
@@ -525,7 +529,7 @@ vector<int> findNeighbors(vector<vector<double>> const& elem, vector<vector<doub
 
 }
 
-double computeEdgeLength(int iEdgeGlobal, vector<vector<int>> const& globalEdge, vector<vector<double>> const& nodes) {
+double computeEdgeLength(int iEdgeGlobal, vector<vector<int>> const &globalEdge, vector<vector<double>> const &nodes){
     double n1x = nodes[globalEdge[iEdgeGlobal][0] - 1][0];
     double n1y = nodes[globalEdge[iEdgeGlobal][0] - 1][1];
     double n2x = nodes[globalEdge[iEdgeGlobal][1] - 1][0];
@@ -537,7 +541,7 @@ double computeEdgeLength(int iEdgeGlobal, vector<vector<int>> const& globalEdge,
 
 
 // 2nd Order Finite Volume Driver
-vector<vector<double>> secondOrderFV(int opt, vector<vector<double>>& U, vector<double> const& area, vector<vector<double>> const& nodes, vector<vector<double>> const& elem, double Minf, double alphaDeg, vector<vector<double>> const& Bn, vector<vector<double>> const& In, vector<vector<int>> const &elemBounds, vector<vector<double>> const& bounds, vector<vector<double>> const& interiorFaces, vector<vector<int>> const& globalEdge, vector<vector<double>> const& I2E, vector<vector<double>> const& B2E, string limiterType) {
+vector<vector<double>> secondOrderFV(int opt, vector<vector<double>> &U, vector<double> const &area ,vector<vector<double>> const &nodes, vector<vector<double>> const &elem, double Minf, double alphaDeg, vector<vector<double>> const &Bn, vector<vector<double>> const &In, vector<vector<int>> const &elemBounds, vector<vector<double>> const &bounds, vector<vector<double>> const &interiorFaces, vector<vector<int>> const &globalEdge, vector<vector<double>> const &I2E, vector<vector<double>> const &B2E, string limiterType){
     // limiterType must be one of the following:
         // "BJ"
         // "MP"
@@ -674,9 +678,13 @@ vector<vector<double>> secondOrderFV(int opt, vector<vector<double>>& U, vector<
             UR_limiting.reserve(4);
             // If no UR exists, need to create a ghost state
             if(isBoundFace == true){
+
                 bool isWall = false;
+
                 if(bounds[iFaceLocal][2] != 4){ // TODO: freestream boundaries == 4, airfoil boundaries == 1,2,3
+
                     isWall = true;
+
                 }
 
                 UR_limiting = computeBoundaryState(nodes, elem, UR_limiting, isWall, Minf, alphaDeg, Bn, iFaceLocal);

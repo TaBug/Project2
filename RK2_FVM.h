@@ -21,10 +21,10 @@ void rk2(int opt, vector<vector<double>> &u, vector<double> const &area ,vector<
     
     double residSum = DBL_MAX;
 
-    while(residSum > convergedVal){
+    while (residSum > convergedVal) {
         // initialize L1 Residual and Residual to 0 every time iteration
-        vector<vector<double>> residual(nelem,vector<double>(4));
-        vector<vector<double>> residual2(nelem,vector<double>(4));
+        vector<vector<double>> residual(nelem, vector<double>(4));
+        vector<vector<double>> residual2(nelem, vector<double>(4));
         double resL1 = 0;
 
         // calculate residual of each element

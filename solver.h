@@ -9,6 +9,7 @@
 #define solver_h
 
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <string>
 #include <sstream>
@@ -360,34 +361,36 @@ vector<Vector2d> barthJespersen(vector<vector<double>> const &nodes, vector<vect
         uMIN[i] = *(min_element(uALL[i].begin(), uALL[i].end()));
     }
 
+
     // Find cell0 state
     vector<double> u0 = U[iCell];
+
 
     // Obtain all rNs
     vector<Vector2d> rN = compute_rN(nodes, elem, iCell);
 
         //out rN
-        cout << "rN" << endl;
-        for (int i = 0; i < rN.size(); i++) {
-        // Loop through each element in the inner vector
-        for (int j = 0; j < rN[i].size(); j++) {
-            cout << rN[i][j] << " ";
-        }
-        cout << endl;
-        }    
+        // cout << "rN" << endl;
+        // for (int i = 0; i < rN.size(); i++) {
+        // // Loop through each element in the inner vector
+        // for (int j = 0; j < rN[i].size(); j++) {
+        //     cout << rN[i][j] << " ";
+        // }
+        // cout << endl;
+        // }    
 
     // Optain all L
     vector<Vector2d> L = computeL(nodes, elem, U, iCell, iNeighbor, iFaces, Minf, alphaDeg, Bn, bounds, interiorFaces, elemBounds);
 
         //out L
-        cout << "L" << endl;
-        for (int i = 0; i < L.size(); i++) {
-        // Loop through each element in the inner vector
-        for (int j = 0; j < L[i].size(); j++) {
-            cout << L[i][j] << " ";
-        }
-        cout << endl;
-        }
+        // cout << "L" << endl;
+        // for (int i = 0; i < L.size(); i++) {
+        // // Loop through each element in the inner vector
+        // for (int j = 0; j < L[i].size(); j++) {
+        //     cout << L[i][j] << " ";
+        // }
+        // cout << endl;
+        // }
 
     // Obtain node states
     // Each row is a node and each col is a state variable
@@ -407,14 +410,14 @@ vector<Vector2d> barthJespersen(vector<vector<double>> const &nodes, vector<vect
     }
 
         //out Uin
-        cout << "Uin" << endl;
-        for (int i = 0; i < uiN.size(); i++) {
-        // Loop through each element in the inner vector
-        for (int j = 0; j < uiN[i].size(); j++) {
-            cout << uiN[i][j] << " ";
-        }
-        cout << endl;
-        }
+        // cout << "Uin" << endl;
+        // for (int i = 0; i < uiN.size(); i++) {
+        // // Loop through each element in the inner vector
+        // for (int j = 0; j < uiN[i].size(); j++) {
+        //     cout << uiN[i][j] << " ";
+        // }
+        // cout << endl;
+        // }
 
 
     // Computing alphaNs
@@ -435,7 +438,7 @@ vector<Vector2d> barthJespersen(vector<vector<double>> const &nodes, vector<vect
             }
             else if ((uiN[iN][iU]-u0[iU])<0){
 
-                double alpha_iN = max(1.0,(uMAX[iU]-u0[iU])/(uiN[iN][iU]-u0[iU]));
+                double alpha_iN = min(1.0,(uMIN[iU]-u0[iU])/(uiN[iN][iU]-u0[iU]));
 
                 if(alpha_iN < alphas[iU]){
                     alphas[iU] = alpha_iN;
@@ -453,6 +456,14 @@ vector<Vector2d> barthJespersen(vector<vector<double>> const &nodes, vector<vect
 
         } // end loop for each state variable
     } // end loop for each node
+
+        //out alpha
+        // cout << "Alpha" << endl;
+        // for (int i = 0; i < alphas.size(); i++) {
+        //     cout <<std::setprecision(15)<< alphas[i] << " ";
+        // cout << endl;
+        // }
+
 
     // Scale the limeters
     for(int iU = 0; iU < 4; iU++){

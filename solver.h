@@ -7,6 +7,7 @@
 
 #ifndef solver_h
 #define solver_h
+#define _USE_MATH_DEFINES
 
 #include <iostream>
 #include <fstream>
@@ -20,7 +21,6 @@
 #include <algorithm>
 #include "elem2Edge.h"
 #include "fluxes.h"
-
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 

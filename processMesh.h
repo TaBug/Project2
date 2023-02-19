@@ -57,7 +57,6 @@ void getMatSizes(string fileName, int &nnode, int &nbedge, int &nelem){
 	else {
 		cout << "Error: Unable to open file " << fileName << "\n";
 	}
-	
 }
 
 // READ GMSH .BDF OUTPUT FILE INTO NODE, BOUNDARY, AND ELEMENT MATRICES
@@ -67,7 +66,6 @@ void readGmshFile(string fileName,int nnode,int nbedge,int nelem, vector<vector<
     // Open the file for reading
     ifstream file(fileName);
 	
-	
 	int discard; // Dummy variable for parameters we do not care about
 
     // If there is a file in the directory matching the input parameter "fileName", open it
@@ -76,14 +74,10 @@ void readGmshFile(string fileName,int nnode,int nbedge,int nelem, vector<vector<
         string currLine;
 		
 		// INITIALIZE DATA STRUCTURE SIZES
-
 		string type;
-		
 		while (getline(file, currLine)) {
-			
 			// READ IN THE NODE DATA (Coordinates and row indices represent node numbers)
 			if (currLine.find("GRID") == 0) {
-				
 				size_t ID;
 				stringstream ss(currLine);
 				ss >> type >> ID >> discard;
@@ -96,7 +90,6 @@ void readGmshFile(string fileName,int nnode,int nbedge,int nelem, vector<vector<
 			// READ IN THE BOUNDARY
 			else if (currLine.find("CBAR") == 0) {
 				size_t ID;
-
 				stringstream ss(currLine);
 				ss >> type >> ID;
 				ID = ID - 1;
@@ -110,6 +103,7 @@ void readGmshFile(string fileName,int nnode,int nbedge,int nelem, vector<vector<
 				ID = ID - nbedge - 1;
 				ss >> elem[ID][0] >> elem[ID][1] >> elem[ID][2];
 			}
+
 			else if (currLine.find("ENDDATA") == 0) {
 				break;
 			}
@@ -147,7 +141,6 @@ vector<int> boundSizes(vector<vector<double>> &bounds,int nbedge){
 void generateGri(string fileName, int nnode,int nbedge,int nelem, vector<vector<double>> nodes, vector<vector<double>> elem, vector<vector<double>> bounds){
 	ofstream file(fileName);
 	if (file.is_open()) {
-			
 		file << nnode << " " << nelem << " 2\n";
 		
 		// Writing Node Data Section
@@ -181,8 +174,7 @@ void generateGri(string fileName, int nnode,int nbedge,int nelem, vector<vector<
 		}
 		
 		// Writing Element Section
-		// ASSUMING THERE IS ONLY ONE ELEMENT GROUP, COULD BE WRONG BUT I THINK THIS IS THE CASE
-		
+		// ASSUMING THERE IS ONLY ONE ELEMENT GROUP, COULD BE WRONG BUT I THINK THIS IS THE CASE		
 		file << nelem << " 1 TriLagrange\n"; // nElem Order Basis
 		for (int i = 0; i < nelem; i++){
 			file << elem[i][0] << " " <<  elem[i][1] << " " << elem[i][2] << "\n";
@@ -192,20 +184,24 @@ void generateGri(string fileName, int nnode,int nbedge,int nelem, vector<vector<
 		file.close();
 		}
 	else {
-		cout << "Error: Unable to open file.\n";
+		cout << "Error: Unable to open file " << fileName << "\n";
 	}
 }
 
 // TASK 2
-
+/* Construct a matrix that maps the global face index to the indices of the end nodes, left element index, and right element index
+	INPUTS: niedge = total number of edges
+			nelem = total number of elements
+			bounds = matrix that stores the boudary edges
+			elem = matrix that stores the vertex indices of the elements 
+	OUTPUTS: interiorFaces = matrix that stores the indices of two end nodes, left element index, and tight element index (# of faces x 4) */
 vector<vector<double>> genInteriorFaceVec(int niedge, int nelem, int nbedge, vector<vector<double>> &bounds, vector<vector<double>> &elem){
-	
 	vector<vector<double>> interiorFaces;
 	int facePairs[3][2] = { {0, 1}, {1, 2}, {2, 0} };
 	
 	// Creating a set of all nodes that lie on a boundary
 	unordered_set<double> bNodeSet;
-	for(int iB = 0; iB < nbedge; iB++){
+	for(int iB = 0; iB < nbedge; iB++) {
 		bNodeSet.insert(bounds[iB][0]);
 		bNodeSet.insert(bounds[iB][1]);
 	}
@@ -219,10 +215,10 @@ vector<vector<double>> genInteriorFaceVec(int niedge, int nelem, int nbedge, vec
 			// Check to see if both nodes do not lie on a boundary
 			if(bNodeSet.find(faceNode1)==bNodeSet.end() || bNodeSet.find(faceNode2)==bNodeSet.end()){
 				// Ensure face is not already stored
-				bool inVec = false;
-				int indexMatchingFace = -1;
+				bool inVec = false; // true if face is stored, otherwise false
+				int indexMatchingFace = -1; // face global index
 				for(int i = 0; i < interiorFaces.size(); i++){
-					// Is already accounted for
+					// if the face is already stored, record the global index
 					if( (faceNode1 == interiorFaces[i][0] && faceNode2 == interiorFaces[i][1]) || (faceNode2 == interiorFaces[i][0] && faceNode1 == interiorFaces[i][1]) ){
 						indexMatchingFace = i;
 						inVec = true;
@@ -240,7 +236,6 @@ vector<vector<double>> genInteriorFaceVec(int niedge, int nelem, int nbedge, vec
 			}
 		}
 	}
-		
 	return interiorFaces;
 }
 
@@ -640,7 +635,5 @@ vector<double> verification(int nelem, vector<vector<double>> &I2E, vector<vecto
 	}
 	return err_mag;
 }
-
-
 
 #endif /* processMesh_h */

@@ -220,18 +220,18 @@ structFlux rusanov(vector<double>& UL, vector<double>& UR, double gamma, vector<
 
 	// max wave speed
 	double smag;
-	double sLmax = (velL[0]*n[0]+velL[1]*n[1]) + cL;
-	double sRmax = (velR[0]*n[0]+velR[1]*n[1])+ cR;
+	double sLmax = (velL[0] * n[0] + velL[1] * n[1]) + cL;
+	double sRmax = (velR[0] * n[0] + velR[1] * n[1]) + cR;
 	if (sLmax<0 && sRmax<0){
-		smag=0;
-		}else{
-	if (sLmax > sRmax) {
-		smag = sLmax;
-	}
-	else {
-		smag = sRmax;
-	}
+		smag = 0;
+	} else {
+		if (sLmax > sRmax) {
+			smag = sLmax;
 		}
+		else {
+			smag = sRmax;
+		}
+	}
 
 	// flux assembly
 	vector<double> F(4, 0.0);
@@ -362,25 +362,24 @@ structFlux HLLE(vector<double>& UL, vector<double>& UR, double gamma, vector<dou
 	return output;
 }
 
-structFlux wallFlux(vector<double> &u,vector<double> &n,double &gam){
+structFlux wallFlux(const vector<double> &u,const vector<double> &n,const double &gam){
 	vector<double> v(2);
     vector<double> vb(2);
    	vector<double> F(4);
-    	double pb;
-    	double smag;
+    double pb;
+    double smag;
 
-    	v = {u[1]/u[0], u[2]/u[0]};
+	v = { u[1] / u[0], u[2] / u[0] };
 
-    	vb[0] = v[0] - (v[0]*n[0] + v[1]*n[1])*n[0];
-    	vb[1] = v[1] - (v[0]*n[0] + v[1]*n[1])*n[1];
-
-    	pb = (gam-1)*(u[3] - .5*u[0]*(pow(vb[0],2) + pow(vb[1],2)));
-
-    	F = {0,pb*n[0],pb*n[1],0};
+	vb[0] = v[0] - (v[0] * n[0] + v[1] * n[1]) * n[0];
+	vb[1] = v[1] - (v[0] * n[0] + v[1] * n[1]) * n[1];
+	pb = (gam - 1) * (u[3] - .5 * u[0] * (pow(vb[0], 2) + pow(vb[1], 2)));
+	if ((pb < 0) || (u[0] < 0)) { cout << "Non - physical state!" << "/n"; }
+	if (pb < 0) { pb = -pb; };
+	F = { 0,pb * n[0],pb * n[1],0 };
+	smag = abs(v[0] * n[0] + v[1] * n[1] + sqrt(gam * pb / u[0]));
     
-    	smag = abs(v[0]*n[0] + v[1]*n[1] + sqrt(gam*pb/u[0]));
-    
-    	structFlux output;
+    structFlux output;
 	output.F = F;
 	output.smag = smag;
 	return output;

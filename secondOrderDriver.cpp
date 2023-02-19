@@ -10,13 +10,9 @@
 #include "FE_FVM.h"
 #include "RK2_FVM.h"
 #include "elem2Edge.h"
-
-
-
 using namespace std;
 
 int main(){
-    
     // TODO: FILL
     int opt = 2;
     double CFL = 1;
@@ -25,20 +21,17 @@ int main(){
  
     cout << "Computational Fluid Dynamics II Driver...\n";
     int nnode, nbedge, nelem;
-    string fileName = "/Users/jakeyeaman/Desktop/Comp Fluid Dyn II/Project-1/CoarseMesh";
-    getMatSizes(fileName, nnode,nbedge,nelem);
+    string fileName = "C:/Users/david/OneDrive - Umich/UM/Courses/AE 623/Projects/Project 2/Project2/CoarseMesh.msh";
+    getMatSizes(fileName, nnode, nbedge, nelem); // finds the number of nodes, boundary edges, and elements
         
-    int niedge = 0.5*(3*nelem - nbedge);
+    int niedge = 0.5 * (3 * nelem - nbedge); // number of interior edges
     
-    vector<vector<double>> nodes(nnode, vector<double>(2));
+    vector<vector<double>> nodes(nnode, vector<double>(2)); // node coordinates matrix (#nodes x 2)
     vector<vector<double>> elem(nelem, vector<double>(3)); // [node1, node2, node3]
     vector<vector<double>> bounds(nbedge, vector<double>(3)); // [node1, node2, boundaryGroup]
-    
-    readGmshFile(fileName,nnode,nbedge,nelem,nodes,elem,bounds);
-    generateGri("/Users/jakeyeaman/Desktop/Comp Fluid Dyn II/Project-2/CoarseMesh.gri", nnode, nbedge, nelem, nodes, elem, bounds);
+    readGmshFile(fileName,nnode,nbedge,nelem,nodes,elem,bounds); // construct the matrices
+    generateGri("C:/Users/david/OneDrive - Umich/UM/Courses/AE 623/Projects/Project 2/Project2/CoarseMesh.txt", nnode, nbedge, nelem, nodes, elem, bounds); // convert mesh to .gri file
     vector<vector<double>> interiorFaces = genInteriorFaceVec(niedge, nelem, nbedge, bounds, elem);
-        
-    niedge = int(interiorFaces.size());
 
     // GENERATING TASK 2 DATA STRUCTURES
     vector<vector<double>> I2E = genI2E(niedge, nelem, interiorFaces, elem);
@@ -75,5 +68,4 @@ int main(){
 //    }
 //    outputFile.close();
     return 0;
-
 }

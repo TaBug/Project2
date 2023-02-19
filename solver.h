@@ -706,7 +706,7 @@ vector<vector<double>> secondOrderFV(int opt, vector<vector<double>> &U, vector<
             // Add u_hat*n*delta_l to gradient value in vector for L elem and subtract this for the right element (if existing)
 
             for(int iU = 0; iU < UL_limiting.size(); iU++){
-                Uhat.emplace_back(0.5*(UL_limiting[iU]+UR_limiting[iU]));
+                Uhat.emplace_back((UL_limiting[iU]+UR_limiting[iU])/2);
             }
 
             // Adding u_hat*n*delta_l to elemL and subtracting from elemR
@@ -714,18 +714,23 @@ vector<vector<double>> secondOrderFV(int opt, vector<vector<double>> &U, vector<
                 Vector2d gradU_add = {n[0]*Uhat[iU]*delta_l,n[1]*Uhat[iU]*delta_l};
                 
                 if(iElemR != -1){ // interior face
-                    grad_u[iElemL][iU] += gradU_add;
+                    grad_u[iElemL][iU][0] += gradU_add[0];
+                    grad_u[iElemL][iU][1] += gradU_add[1];
+                    grad_u[iElemR][iU][0] -= gradU_add[0];
+                    grad_u[iElemR][iU][1] -= gradU_add[1];
                 }
                 else{ // boundary face, normal points out of element, therefore
-                    gradU_add = -gradU_add;
-                    grad_u[iElemL][iU] += gradU_add;
+                    // gradU_add = -gradU_add;
+                    grad_u[iElemL][iU][0] -= gradU_add[0];
+                    grad_u[iElemL][iU][1] -= gradU_add[1];
                 }
-
-                if(iLocal.isBound == false){ // if right element exists
-                    grad_u[iElemR][iU] -= gradU_add;
-                }
+                
 
             } // end for iU
+            
+            if(iElemL == 909 || iElemR == 909){
+                int stop = 0;
+            }
 
         } // end for iFace
 
@@ -735,6 +740,11 @@ vector<vector<double>> secondOrderFV(int opt, vector<vector<double>> &U, vector<
                 grad_u[iElem][iU] /= area[iElem];
             } // end for iU
         } // end for iElem
+    
+    for(int i = 0; i < 4; i++){
+        cout << grad_u[909][i][0] << " " << grad_u[909][i][1] << " ";
+    }
+    cout << "\n";
 
         // Initialize Residual and Wave Speed on Each Cell to be Zero
         vector<vector<double>> residuals(nelem, vector<double>(5,0)); // residual for each state and then the wave speed
@@ -757,7 +767,7 @@ vector<vector<double>> secondOrderFV(int opt, vector<vector<double>> &U, vector<
             }
             else{ // if isBoundFace == true
 
-                iElemL = B2E[iFaceLocal][0];
+                iElemL = B2E[iFaceLocal][0] - 1;
                 iElemR = -1;
 
             }
@@ -784,7 +794,7 @@ vector<vector<double>> secondOrderFV(int opt, vector<vector<double>> &U, vector<
             double n2x = nodes[globalEdge[iFaceGlobal][1] - 1][0];
             double n2y = nodes[globalEdge[iFaceGlobal][1] - 1][1];
 
-            Vector2d midpoint = {0.5*(n1x+n2x),0.5*(n1y+n2y)};
+            Vector2d midpoint = {(n1x+n2x)/2,(n1y+n2y)/2};
 
             // centroid for left element
             double xCentroidL = ((nodes[ elem[iElemL][0]-1 ][0]) + (nodes[ elem[iElemL][1]-1 ][0]) + (nodes[ elem[iElemL][2]-1 ][0]))/3;
@@ -862,14 +872,24 @@ vector<vector<double>> secondOrderFV(int opt, vector<vector<double>> &U, vector<
 
             vector<double> F = output.F;
             s = output.smag;
-
-            // Increment and decrement the residuals
-            for(int j = 0; j < 4; j++){
-
-                residuals[iElemL][j] += F[j]*length;
-
+            
+//            if(iElemL == 446 || iElemR == 446){
+//                int stop = 0;
+//            }
+            if(iElemL == 909 || iElemR == 909){
+                int stop = 0;
             }
-            residuals[iElemL][4] += s*length;
+
+            if(iElemR != -1){
+                // Increment and decrement the residuals
+                for(int j = 0; j < 4; j++){
+                    
+                    residuals[iElemL][j] += F[j]*length;
+                    
+                }
+                residuals[iElemL][4] += s*length;
+            }
+            
 
             if(iElemR != -1){ // if elemR exists (i.e. not a boundary point)
 
@@ -880,24 +900,14 @@ vector<vector<double>> secondOrderFV(int opt, vector<vector<double>> &U, vector<
 
             }
             else{
-//                vector<double> currResidTest = residuals[iElemL];
-//                double currSum = 0;
-//                for(int i = 0; i < 4; i++){
-//                    // cout << currResidTest[i] << " ";
-//                    currSum += currResidTest[i];
-//                }
-//                // cout << "\n";
-//                if(currSum >1500){
-//                    cout << "Bad Face = " << iFaceGlobal << " " << iFaceLocal << "\n";
-//                }
-//                int stop = 0;
-                
                 // FROM DEVIN: BOUNDARIES SHOULD SUBTRACT FROM THE RESIDUAL
                 for(int j = 0; j < 4; j++){
                     residuals[iElemL][j] -= F[j]*length;
                 }
                 residuals[iElemL][4] += s*length; // I dont know what it means to add wave speed tallies on L and R cells
             }
+            
+            int stopper = 0; 
 
         } // end for iFaceGlobal
         
@@ -916,6 +926,18 @@ vector<vector<double>> secondOrderFV(int opt, vector<vector<double>> &U, vector<
         if(currSum >1500){
             cout << "Bad Element (0-based) = "  << j << "\n";
         }
+    }
+    
+    vector<double> elementResidSum;
+    elementResidSum.reserve(nelem);
+    for(int j = 0; j < residuals.size(); j++){
+        vector<double> currResidTest = residuals[j];
+        double currSum = 0;
+        for(int i = 0; i < 4; i++){
+            // cout << currResidTest[i] << " ";
+            currSum += currResidTest[i];
+        }
+        elementResidSum.emplace_back(currSum);
     }
     
         L1ResidualNorms.push_back(residual);

@@ -59,6 +59,9 @@ void rk2(int opt, vector<vector<double>> &u, vector<double> const &area ,vector<
         vector<vector<double>> uf0(nelem,vector<double>(4,0));
         // first step of RK2
         for (int i = 0; i < nelem; i++){
+            if(i == 446){
+                int stop = 0; 
+            }
             double dt = (2*Area[i]*CFL)/residual[i][4]; // calculate local time step
             
             // find f0 and use it to find uf0 which is used for next step of RK2

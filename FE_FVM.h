@@ -7,7 +7,7 @@
 using namespace std;
 
 void FVM_1st(vector<vector<double>>& bounds, vector<vector<double>>& nodes, vector<vector<double>>& interiorFaces, vector<vector<double>>& u,
-    vector<vector<double>>& B2E, vector<vector<double>>& Bn, vector<vector<double>>& In, int& nelem) {
+             vector<vector<double>>& B2E, vector<vector<double>>& Bn, vector<vector<double>>& In, int& nelem) {
     double CFL;
     int opt;
     int time;
@@ -25,7 +25,7 @@ void FVM_1st(vector<vector<double>>& bounds, vector<vector<double>>& nodes, vect
     cin >> time;
 
     // Loop through for maximum number of time iterations (100,000)
-    timeStep: for (int t = 1; t < time; t++) {
+    for (int t = 1; t < time; t++) {
         // initialize L1 Residual and Residual to 0 every time iteration
         vector<vector<double>> residual(nelem, vector<double>(4));
         double resL1 = 0;
@@ -54,5 +54,5 @@ void FVM_1st(vector<vector<double>>& bounds, vector<vector<double>>& nodes, vect
         //cout << t << "\n";
     }
 
-return;
+    return;
 }

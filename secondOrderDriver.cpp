@@ -14,6 +14,7 @@ using namespace std;
 
 int main(){
     // TODO: FILL
+    double gamma = 1.4;
     int opt = 2;
     double CFL = 1;
     double Minf = 0.25;
@@ -40,12 +41,13 @@ int main(){
     vector<vector<double>> Bn = genBn(nbedge, bounds, nodes, elem, B2E);
     vector<double> Area = genArea(nelem, elem, nodes);
 
-    vector<vector<double>> u(nelem, vector<double> (4));
-    for(int i=0;i<nelem;++i)  {
-        u[i][0]=1;
-        u[i][1]=.25*cos(8*3.14159/180);
-        u[i][2]=.25*sin(8*3.14159/180);
-        u[i][3]=1/(.4*1.4)+.25*.25/2;
+    // initialize the state to free-stream condition
+    vector<vector<double>> u(nelem, vector<double>(4));
+    for (int i = 0; i < nelem; ++i) {
+        u[i][0] = 1;
+        u[i][1] = Minf * cos(alphaDeg * M_PI / 180);
+        u[i][2] = Minf * sin(alphaDeg * M_PI / 180);
+        u[i][3] = 1 / ((gamma - 1) * gamma) + pow(Minf, 2) / 2;
     }
 
     FVM_1st(bounds, nodes, interiorFaces, u, B2E, Bn, In, nelem);

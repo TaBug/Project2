@@ -20,11 +20,13 @@ void rk2(int opt, vector<vector<double>> &u, vector<double> const &area ,vector<
     vector<vector<double>> f1(nelem,vector<double>(4));
     
     double residSum = DBL_MAX;
+    int niter = 0;
 
-    while (residSum > convergedVal) {
+    while(residSum > convergedVal){
+        niter++;
         // initialize L1 Residual and Residual to 0 every time iteration
-        vector<vector<double>> residual(nelem, vector<double>(4));
-        vector<vector<double>> residual2(nelem, vector<double>(4));
+        vector<vector<double>> residual(nelem,vector<double>(4));
+        vector<vector<double>> residual2(nelem,vector<double>(4));
         double resL1 = 0;
 
         // calculate residual of each element
@@ -36,6 +38,19 @@ void rk2(int opt, vector<vector<double>> &u, vector<double> const &area ,vector<
                 resL1 += abs(residual[i][j]);
             }
         }
+        
+        for (int i = 0; i < nelem; i++){
+            bool hasNan = false;
+            for (int j = 0; j < 4; j++){
+                if(isnan(abs(residual[i][j]))){
+                    hasNan = true;
+                }
+            }
+            if(hasNan == true){
+                cout << i + 1 << "\n";
+            }
+        }
+        
         if (resL1 < pow(10,-5)){
                 break;
         }
@@ -55,6 +70,21 @@ void rk2(int opt, vector<vector<double>> &u, vector<double> const &area ,vector<
 
         // calculate residuals for the state uf0
         residual2 = secondOrderFV(opt, uf0, Area, nodes, elem, Minf, alphaDeg, Bn, In, elemBounds, bounds, interiorFaces, globalEdge, I2E, B2E, limiterType);
+        
+        double sum = 0;
+        for(int i = 0; i < residual2.size(); i++){
+            for(int j = 0; j < residual2[0].size() - 1;j++){
+                sum += abs(residual2[i][j]);
+            }
+        }
+        
+        residSum = sum;
+        
+        cout << residSum << "\n";
+        
+        if(niter % 5 == 0){
+            cout << "\n\nIteration " << niter << " residual is " << residSum << "\n\n\n";
+        }
 
         // second step of RK2
         for (int i = 0; i < nelem; i++){
@@ -69,7 +99,11 @@ void rk2(int opt, vector<vector<double>> &u, vector<double> const &area ,vector<
         }
 
     }
+    
+    // int stopHere = -1;
 
 }
 
 #endif /* RK2_FVM_h */
+
+

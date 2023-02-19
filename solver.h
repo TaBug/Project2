@@ -58,8 +58,8 @@ vector<double> computeFreestreamState(double Minf, double alphaDeg){
 //}
 
 vector<Vector3d> computeP(vector<vector<double>> const &nodes, vector<vector<double>> const &elem, vector<double> const &U_cell, int const iCell){
-    double xCentroid = (1/3)*((nodes[ elem[iCell][0]-1 ][0]) + (nodes[ elem[iCell][1]-1 ][0]) + (nodes[ elem[iCell][2]-1 ][0]));
-    double yCentroid = (1/3)*((nodes[ elem[iCell][0]-1 ][1]) + (nodes[ elem[iCell][1]-1 ][1]) + (nodes[ elem[iCell][2]-1 ][1]));
+    double xCentroid = ((nodes[ elem[iCell][0]-1 ][0]) + (nodes[ elem[iCell][1]-1 ][0]) + (nodes[ elem[iCell][2]-1 ][0]))/3;
+    double yCentroid = ((nodes[ elem[iCell][0]-1 ][1]) + (nodes[ elem[iCell][1]-1 ][1]) + (nodes[ elem[iCell][2]-1 ][1]))/3;
     vector<Vector3d> P;
     P.reserve(U_cell.size());
 
@@ -96,8 +96,8 @@ vector<Vector3d> computeP_boundary(vector<vector<double>> const &nodes, vector<v
     vector<double> edgeMidpoint = {(nodes[elem[iCell][nodeIndices[0]]-1][0] + nodes[elem[iCell][nodeIndices[1]]-1][0])/2, (nodes[elem[iCell][nodeIndices[0]]-1][1] + nodes[elem[iCell][nodeIndices[1]]-1][1])/2}; // cell0 and cellk edge interface midpoint
 
     // Finding current, non-ghost cell center
-    double xCentroid = (1/3)*((nodes[ elem[iCell][0]-1 ][0]) + (nodes[ elem[iCell][1]-1 ][0]) + (nodes[ elem[iCell][2]-1 ][0]));
-    double yCentroid = (1/3)*((nodes[ elem[iCell][0]-1 ][1]) + (nodes[ elem[iCell][1]-1 ][1]) + (nodes[ elem[iCell][2]-1 ][1]));
+    double xCentroid = ((nodes[ elem[iCell][0]-1 ][0]) + (nodes[ elem[iCell][1]-1 ][0]) + (nodes[ elem[iCell][2]-1 ][0]))/3;
+    double yCentroid = ((nodes[ elem[iCell][0]-1 ][1]) + (nodes[ elem[iCell][1]-1 ][1]) + (nodes[ elem[iCell][2]-1 ][1]))/3;
 
     // Finding ghost cell center
     double dx = edgeMidpoint[0] - xCentroid;
@@ -366,8 +366,28 @@ vector<Vector2d> barthJespersen(vector<vector<double>> const &nodes, vector<vect
     // Obtain all rNs
     vector<Vector2d> rN = compute_rN(nodes, elem, iCell);
 
+        //out rN
+        cout << "rN" << endl;
+        for (int i = 0; i < rN.size(); i++) {
+        // Loop through each element in the inner vector
+        for (int j = 0; j < rN[i].size(); j++) {
+            cout << rN[i][j] << " ";
+        }
+        cout << endl;
+        }    
+
     // Optain all L
     vector<Vector2d> L = computeL(nodes, elem, U, iCell, iNeighbor, iFaces, Minf, alphaDeg, Bn, bounds, interiorFaces, elemBounds);
+
+        //out L
+        cout << "L" << endl;
+        for (int i = 0; i < L.size(); i++) {
+        // Loop through each element in the inner vector
+        for (int j = 0; j < L[i].size(); j++) {
+            cout << L[i][j] << " ";
+        }
+        cout << endl;
+        }
 
     // Obtain node states
     // Each row is a node and each col is a state variable
@@ -383,7 +403,19 @@ vector<Vector2d> barthJespersen(vector<vector<double>> const &nodes, vector<vect
             currState.emplace_back(u0[iU] + rN[iN].dot(L[iU]));
         }
         uiN.emplace_back(currState);
+        
     }
+
+        //out Uin
+        cout << "Uin" << endl;
+        for (int i = 0; i < uiN.size(); i++) {
+        // Loop through each element in the inner vector
+        for (int j = 0; j < uiN[i].size(); j++) {
+            cout << uiN[i][j] << " ";
+        }
+        cout << endl;
+        }
+
 
     // Computing alphaNs
     vector<double> alphas(4, DBL_MAX); // Final, minimul alpha values
@@ -733,16 +765,16 @@ vector<vector<double>> secondOrderFV(int opt, vector<vector<double>> &U, vector<
             Vector2d midpoint = {0.5*(n1x+n2x),0.5*(n1y+n2y)};
 
             // centroid for left element
-            double xCentroidL = (1/3)*((nodes[ elem[iElemL][0]-1 ][0]) + (nodes[ elem[iElemL][1]-1 ][0]) + (nodes[ elem[iElemL][2]-1 ][0]));
-            double yCentroidL = (1/3)*((nodes[ elem[iElemL][0]-1 ][1]) + (nodes[ elem[iElemL][1]-1 ][1]) + (nodes[ elem[iElemL][2]-1 ][1]));
+            double xCentroidL = ((nodes[ elem[iElemL][0]-1 ][0]) + (nodes[ elem[iElemL][1]-1 ][0]) + (nodes[ elem[iElemL][2]-1 ][0]))/3;
+            double yCentroidL = ((nodes[ elem[iElemL][0]-1 ][1]) + (nodes[ elem[iElemL][1]-1 ][1]) + (nodes[ elem[iElemL][2]-1 ][1]))/3;
             Vector2d centroidL = {xCentroidL, yCentroidL};
 
             // centroid for right element
             Vector2d centroidR;
             if(isBoundFace == false){
 
-                double xCentroidR = (1/3)*((nodes[ elem[iElemR][0]-1 ][0]) + (nodes[ elem[iElemR][1]-1 ][0]) + (nodes[ elem[iElemR][2]-1 ][0]));
-                double yCentroidR = (1/3)*((nodes[ elem[iElemR][0]-1 ][1]) + (nodes[ elem[iElemR][1]-1 ][1]) + (nodes[ elem[iElemR][2]-1 ][1]));
+                double xCentroidR = ((nodes[ elem[iElemR][0]-1 ][0]) + (nodes[ elem[iElemR][1]-1 ][0]) + (nodes[ elem[iElemR][2]-1 ][0]))/3;
+                double yCentroidR = ((nodes[ elem[iElemR][0]-1 ][1]) + (nodes[ elem[iElemR][1]-1 ][1]) + (nodes[ elem[iElemR][2]-1 ][1]))/3;
                 centroidR = {xCentroidR, yCentroidR};
 
             }

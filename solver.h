@@ -7,6 +7,7 @@
 
 #ifndef solver_h
 #define solver_h
+#define _USE_MATH_DEFINES
 
 #include <iostream>
 #include <fstream>
@@ -34,7 +35,7 @@ using namespace Eigen;
 vector<double> computeFreestreamState(double Minf, double alphaDeg){
     double alphaRad = alphaDeg * M_PI / 180.0;
     double gamma = 1.4;
-    vector<double> uInf = {1.0, Minf*cos(alphaRad), Minf*sin(alphaRad), (1/(gamma*gamma-gamma))+0.5*(Minf*Minf)};
+    vector<double> uInf = { 1.0, Minf * cos(alphaRad), Minf * sin(alphaRad), (1 / (gamma * gamma - gamma)) + 0.5 * (Minf * Minf) };
     return uInf;
 }
 

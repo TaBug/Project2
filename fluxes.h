@@ -18,7 +18,7 @@ struct structFlux {
 	double smag;
 };
 
-structFlux roe(vector<double>& UL, vector<double>& UR, double gamma, vector<double> n) {
+structFlux roe(const vector<double>& UL, const vector<double>& UR, double gamma, vector<double> n) {
 	const double gmi = gamma - 1.0;
 
 	// process left state
@@ -31,15 +31,7 @@ structFlux roe(vector<double>& UL, vector<double>& UR, double gamma, vector<doub
 	qL = sqrt(pow(UL[1], 2) + pow(UL[2], 2)) / rL;
 	pL = (gamma - 1) * (UL[3] - 0.5 * rL * pow(qL, 2));
 	if (pL < 0 || rL < 0) {
-		cout << "Non-physical state!" << "\n";
-		cout << UL[0] << "\n";
-		cout << UL[1] << "\n";
-	}
-	if (pL < 0) {
-		pL = -pL;
-	}
-	if (rL < 0) {
-		rL = -rL;
+		cout << "Left state is non-physical!" << "\n";
 	}
 	rHL = UL[3] + pL;
 	HL = rHL / rL;
@@ -62,13 +54,7 @@ structFlux roe(vector<double>& UL, vector<double>& UR, double gamma, vector<doub
 	qR = sqrt(pow(UR[1], 2) + pow(UR[2], 2)) / rR;
 	pR = (gamma - 1) * (UR[3] - 0.5 * rR * pow(qR, 2));
 	if (pR < 0 || rR < 0) {
-		cout << "Non-physical state!" << "\n";
-	}
-	if (pR < 0) {
-		pR = -pR;
-	}
-	if (rR < 0) {
-		rR = -rR;
+		cout << "Right state is non-physical!" << "\n";
 	}
 	rHR = UR[3] + pR;
 	HR = rHR / rR;
@@ -98,8 +84,7 @@ structFlux roe(vector<double>& UL, vector<double>& UR, double gamma, vector<doub
 	ucp = ui * n[0] + vi * n[1];
 	c2 = gmi * (Hi - af);
 	if (c2 < 0) {
-		cout << "Non-physical state!" << "\n";
-		c2 = -c2;
+		cout << "Speed of sound is non-physical state!" << "\n";
 	}
 	ci = sqrt(c2);
 	ci1 = 1.0 / ci;
@@ -149,7 +134,7 @@ structFlux roe(vector<double>& UL, vector<double>& UR, double gamma, vector<doub
 	return output;
 }
 
-structFlux rusanov(vector<double>& UL, vector<double>& UR, double gamma, vector<double>& n) {
+structFlux rusanov(const vector<double>& UL, const vector<double>& UR, double gamma, const vector<double>& n) {
 	// process left state
 	double rL, uL, vL, unL, qL, pL, rHL, HL, cL;
 
@@ -162,14 +147,6 @@ structFlux rusanov(vector<double>& UL, vector<double>& UR, double gamma, vector<
 	pL = (gamma - 1) * (UL[3] - 0.5 * rL * pow(qL, 2));
 	if (pL < 0 || rL < 0) {
 		cout << "Non-physical state!" << "\n";
-		cout << UL[0] << "\n";
-		cout << UL[1] << "\n";
-	}
-	if (pL < 0) {
-		pL = -pL;
-	}
-	if (rL < 0) {
-		rL = -rL;
 	}
 	rHL = UL[3] + pL;
 	HL = rHL / rL;
@@ -194,12 +171,6 @@ structFlux rusanov(vector<double>& UL, vector<double>& UR, double gamma, vector<
 	pR = (gamma - 1) * (UR[3] - 0.5 * rR * pow(qR, 2));
 	if (pR < 0 || rR < 0) {
 		cout << "Non-physical state!" << "\n";
-	}
-	if (pR < 0) {
-		pR = -pR;
-	}
-	if (rR < 0) {
-		rR = -rR;
 	}
 	rHR = UR[3] + pR;
 	HR = rHR / rR;
@@ -246,7 +217,7 @@ structFlux rusanov(vector<double>& UL, vector<double>& UR, double gamma, vector<
 	return output;
 }
 
-structFlux HLLE(vector<double>& UL, vector<double>& UR, double gamma, vector<double>& n) {
+structFlux HLLE(const vector<double>& UL, const vector<double>& UR, double gamma, vector<double>& n) {
 	// process left state
 	double rL, uL, vL, unL, qL, pL, rHL, HL, cL;
 
@@ -259,14 +230,6 @@ structFlux HLLE(vector<double>& UL, vector<double>& UR, double gamma, vector<dou
 	pL = (gamma - 1) * (UL[3] - 0.5 * rL * pow(qL, 2));
 	if (pL < 0 || rL < 0) {
 		cout << "Non-physical state!" << "\n";
-		cout << UL[0] << "\n";
-		cout << UL[1] << "\n";
-	}
-	if (pL < 0) {
-		pL = -pL;
-	}
-	if (rL < 0) {
-		rL = -rL;
 	}
 	rHL = UL[3] + pL;
 	HL = rHL / rL;
@@ -291,12 +254,6 @@ structFlux HLLE(vector<double>& UL, vector<double>& UR, double gamma, vector<dou
 	pR = (gamma - 1) * (UR[3] - 0.5 * rR * pow(qR, 2));
 	if (pR < 0 || rR < 0) {
 		cout << "Non-physical state!" << "\n";
-	}
-	if (pR < 0) {
-		pR = -pR;
-	}
-	if (rR < 0) {
-		rR = -rR;
 	}
 	rHR = UR[3] + pR;
 	HR = rHR / rR;
@@ -366,12 +323,21 @@ structFlux wallFlux(vector<double> &u,vector<double> &n,double &gam){
 
     	v = {u[1]/u[0], u[2]/u[0]};
 
+<<<<<<< Updated upstream
     	vb[0] = v[0] - (v[0]*n[0] + v[1]*n[1])*n[0];
     	vb[1] = v[1] - (v[0]*n[0] + v[1]*n[1])*n[1];
 
     	pb = (gam-1.4)*(u[3] - .5*u[0]*sqrt(pow(vb[0],2) + pow(vb[1],2)));
 
     	F = {0,pb*n[0],pb*n[1],0};
+=======
+	vb[0] = v[0] - (v[0] * n[0] + v[1] * n[1]) * n[0];
+	vb[1] = v[1] - (v[0] * n[0] + v[1] * n[1]) * n[1];
+	pb = (gam - 1) * (u[3] - .5 * u[0] * (pow(vb[0], 2) + pow(vb[1], 2)));
+	if ((pb < 0) || (u[0] < 0)) { cout << "Wall flux is non-physical!" << "/n"; }
+	F = { 0,pb * n[0],pb * n[1],0 };
+	smag = abs(v[0] * n[0] + v[1] * n[1] + sqrt(gam * pb / u[0]));
+>>>>>>> Stashed changes
     
     	smag = abs(v[0]*n[0] + v[1]*n[1] + sqrt(9.81*pb/u[0]));
     

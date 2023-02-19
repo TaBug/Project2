@@ -4,7 +4,12 @@
 #include "fluxes.h"
 
 using namespace std;
+<<<<<<< Updated upstream
 vector<vector<double>> getRes(int &nelem,int &opt,vector<vector<double>> &u, vector<vector<double>> &interiorFaces,vector<vector<double>> &In,vector<vector<double>> &bounds,vector<vector<double>> &Bn,vector<vector<double>> &B2E,vector<vector<double>> &nodes){
+=======
+
+vector<vector<double>> getRes(int& nelem, int& opt, vector<vector<double>>& u, vector<vector<double>>& interiorFaces, vector<vector<double>>& In, vector<vector<double>>& bounds, vector<vector<double>>& Bn, vector<vector<double>>& B2E, vector<vector<double>>& nodes, const vector<double>& uinf) {
+>>>>>>> Stashed changes
     vector<vector<double>> residual(nelem,vector<double>(5));
     vector<double> F(4);
     double s;
@@ -44,8 +49,13 @@ vector<vector<double>> getRes(int &nelem,int &opt,vector<vector<double>> &u, vec
             
             // calculate length of edge
             int node1 = interiorFaces[i][0] - 1;
+<<<<<<< Updated upstream
             int node2 = interiorFaces[i][1] - 1;\
             double length = sqrt(pow(nodes[node1][0]+nodes[node2][0],2) + pow(nodes[node1][1]+nodes[node2][1],2));
+=======
+            int node2 = interiorFaces[i][1] - 1;
+            double length = sqrt(pow(nodes[node1][0] - nodes[node2][0], 2) + pow(nodes[node1][1] - nodes[node2][1], 2));
+>>>>>>> Stashed changes
 
             // call chosen flux function to compute flux and wave speed using
             // left state, right state, gamma (1.4), and normal vector
@@ -54,7 +64,7 @@ vector<vector<double>> getRes(int &nelem,int &opt,vector<vector<double>> &u, vec
             s = output.smag;
 
             // add F*length to residual of left element, subtract it from right element
-            for (int j = 0; j < 4; j++){
+            for (int j = 0; j < 4; j++) {
                 residual[elemL][j] += F[j]*length;
                 residual[elemR][j] -= F[j]*length;
             }
@@ -62,12 +72,11 @@ vector<vector<double>> getRes(int &nelem,int &opt,vector<vector<double>> &u, vec
             residual[elemL][4] += s*length;
             residual[elemR][4] += s*length;
     }
+
     // Loop over boundary edges
     for (int i = 0; i < B2E.size(); i++){
         int elem = B2E[i][0] - 1; // set element connected to boundary
-
         vector<double> uTemp(4); // initialize temporary holder for state vector
-
 
         // get normal vector for edge
         n[0] = Bn[i][0];
@@ -84,6 +93,7 @@ vector<vector<double>> getRes(int &nelem,int &opt,vector<vector<double>> &u, vec
         double length = sqrt(pow(nodes[node1][0]+nodes[node2][0],2) + pow(nodes[node1][1]+nodes[node2][1],2));
 
         // call flux function depending on boundary type, computes Flux and wave speed
+<<<<<<< Updated upstream
         if (B2E[i][2] == 4 && (nodes[node1][0] == -100 && nodes[node2][0] == -100)){
             output = inflowFlux(uTemp,n);
         }
@@ -92,16 +102,36 @@ vector<vector<double>> getRes(int &nelem,int &opt,vector<vector<double>> &u, vec
         }
         else {
             output = wallFlux(uTemp,n);
+=======
+        structFlux output;
+        if (B2E[i][2] == 4) {
+            if (opt == 1) {
+                output = roe(uinf,uTemp,gamma,n);
+            }
+            else if (opt == 2){
+                output = rusanov(uinf,uTemp,gamma,n);
+            }
+            else if (opt == 3){
+                output = HLLE(uinf,uTemp,gamma,n);
+            }
+        } else {
+            output = wallFlux(uTemp,n,gamma);
+>>>>>>> Stashed changes
         }
         F = output.F;
         s = output.smag;
 
         // add F*length to residual
+<<<<<<< Updated upstream
         for (int j = 0; j < 4; j++){
             residual[elem][j] += F[j]*length;
+=======
+        for (int j = 0; j < 4; j++) {
+            residual[elem][j] -= F[j] * length;
+>>>>>>> Stashed changes
         }
         // add wave speed
-        residual[elem][4] += s*length;
+        residual[elem][4] += s * length;
     }
     return residual;
 }

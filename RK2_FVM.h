@@ -15,7 +15,7 @@
 
 using namespace std;
 
-void rk2(int opt, vector<vector<double>> &u, vector<double> const &area ,vector<vector<double>> const &nodes, vector<vector<double>> const &elem, double Minf, double alphaDeg, vector<vector<double>> const &Bn, vector<vector<double>> const &In, vector<vector<int>> const &elemBounds, vector<vector<double>> const &bounds, vector<vector<double>> const &interiorFaces, vector<vector<int>> const &globalEdge, vector<vector<double>> const &I2E, vector<vector<double>> const &B2E, string limiterType, double convergedVal, vector<double>const &Area, int nelem, double CFL){
+void rk2(int opt, vector<vector<double>> &u, vector<double> const &area ,vector<vector<double>> const &nodes, vector<vector<double>> const &elem, double Minf, double alphaDeg, vector<vector<double>> const &Bn, vector<vector<double>> const &In, vector<vector<int>> const &elemBounds, vector<vector<double>> const &bounds, vector<vector<double>> const &interiorFaces, vector<vector<int>> const &globalEdge, vector<vector<double>> const &I2E, vector<vector<double>> const &B2E, string limiterType, double convergedVal, vector<double>const &Area, int nelem, double CFL, vector<double> &L1_norms){
     vector<vector<double>> f0(nelem,vector<double>(4));
     vector<vector<double>> f1(nelem,vector<double>(4));
     
@@ -59,9 +59,7 @@ void rk2(int opt, vector<vector<double>> &u, vector<double> const &area ,vector<
         vector<vector<double>> uf0(nelem,vector<double>(4,0));
         // first step of RK2
         for (int i = 0; i < nelem; i++){
-            if(i == 446){
-                int stop = 0; 
-            }
+
             double dt = (2*Area[i]*CFL)/residual[i][4]; // calculate local time step
             
             // find f0 and use it to find uf0 which is used for next step of RK2
@@ -82,10 +80,11 @@ void rk2(int opt, vector<vector<double>> &u, vector<double> const &area ,vector<
         }
         
         residSum = sum;
+        L1_norms.emplace_back(residSum);
         
-        cout << residSum << "\n";
+//        cout << residSum << "\n";
         
-        if(niter % 5 == 0){
+        if(niter % 500 == 0){
             cout << "\n\nIteration " << niter << " residual is " << residSum << "\n\n\n";
         }
 

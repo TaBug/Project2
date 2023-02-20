@@ -54,9 +54,6 @@ vector<double> computeFreestreamState(double Minf, double alphaDeg){
 /// Limiter Functions
 ///
 
-//vector<double> computeNeighborIndices(){
-//
-//}
 
 vector<Vector3d> computeP(vector<vector<double>> const &nodes, vector<vector<double>> const &elem, vector<double> const &U_cell, int const iCell){
     double xCentroid = ((nodes[ elem[iCell][0]-1 ][0]) + (nodes[ elem[iCell][1]-1 ][0]) + (nodes[ elem[iCell][2]-1 ][0]))/3;
@@ -105,20 +102,6 @@ vector<Vector3d> computeP_boundary(vector<vector<double>> const &nodes, vector<v
     double dy = edgeMidpoint[1] - yCentroid;
     double xCentroidGhost = edgeMidpoint[0] + dx;
     double yCentroidGhost = edgeMidpoint[1] + dy;
-
-//    vector<double> U_ghost;
-//    U_ghost.reserve(4);
-//
-//    if(isWall == true){ // Wall Boundary
-//        double rho = U_cell[0];
-//        Vector2d vCell = {U_cell[1]/rho,U_cell[2]/rho};
-//        Vector2d n = {Bn[iBound][0],Bn[iBound][1]};
-//        Vector2d vb = vCell - (vCell.dot(n))*n;
-//        U_ghost = {rho, rho*vb[0], rho*vb[1], U_cell[3]};
-//    }
-//    else{ // Freestream
-//        U_ghost = computeFreestreamState(Minf, alphaDeg);
-//    }
 
     vector<double> U_ghost = computeBoundaryState(nodes, elem, U_cell, isWall, Minf, alphaDeg, Bn, iBound);
 
@@ -586,10 +569,6 @@ vector<vector<double>> secondOrderFV(int opt, vector<vector<double>> &U, vector<
                 iElemR = -1;
 
             }
-            
-            if(iElemL == 5-1 || iElemR == 5-1){ // testing one of the elements which has a NaN residual
-                int stopper = 1; 
-            }
 
             // Obtaining all elements neighboring elemL
             vector<int> iNeighbor;
@@ -666,9 +645,6 @@ vector<vector<double>> secondOrderFV(int opt, vector<vector<double>> &U, vector<
 
             }
             
-            if(iElemL == 446 || iElemR == 446){
-                int stop = 0; 
-            }
 
             // Compute face length
             double delta_l = computeEdgeLength(iFaceGlobal, globalEdge, nodes);
@@ -688,10 +664,6 @@ vector<vector<double>> secondOrderFV(int opt, vector<vector<double>> &U, vector<
                     isWall = true;
 
                 }
-//                else{
-//                    int stop = 0;
-//
-//                }
 
                 UR_limiting = computeBoundaryState(nodes, elem, UL_limiting, isWall, Minf, alphaDeg, Bn, iFaceLocal);
 
@@ -728,9 +700,6 @@ vector<vector<double>> secondOrderFV(int opt, vector<vector<double>> &U, vector<
 
             } // end for iU
             
-            if(iElemL == 909 || iElemR == 909){
-                int stop = 0;
-            }
 
         } // end for iFace
 
@@ -741,10 +710,6 @@ vector<vector<double>> secondOrderFV(int opt, vector<vector<double>> &U, vector<
             } // end for iU
         } // end for iElem
     
-    for(int i = 0; i < 4; i++){
-        cout << grad_u[909][i][0] << " " << grad_u[909][i][1] << " ";
-    }
-    cout << "\n";
 
         // Initialize Residual and Wave Speed on Each Cell to be Zero
         vector<vector<double>> residuals(nelem, vector<double>(5,0)); // residual for each state and then the wave speed
@@ -846,9 +811,7 @@ vector<vector<double>> secondOrderFV(int opt, vector<vector<double>> &U, vector<
                     isWall = true;
 
                 }
-//                if(iFaceLocal == 113){
-//                    int stop = 0;
-//                }
+
                 UR = computeBoundaryState(nodes, elem, U[iElemL], isWall, Minf, alphaDeg, Bn, iFaceLocal);
                 for(int iU = 0; iU < 4; iU++){
                     double UR_add = grad_u[iElemL][iU].dot(midpoint-centroidR); // same grad_u as left element ????
@@ -859,26 +822,34 @@ vector<vector<double>> secondOrderFV(int opt, vector<vector<double>> &U, vector<
 
             // Call appropriate flux function
             if(opt == 1){
-                output = roe(UL, UR, 1.4, n);
+                if(iElemR != -1){
+                    output = roe(UL, UR, 1.4, n);
+                }
+                else{
+                    output = roe(UR, UL, 1.4, n);
+                }
             }
 
             else if (opt == 2){
-                output = rusanov(UL, UR, 1.4, n);
+                if(iElemR != -1){
+                    output = rusanov(UL, UR, 1.4, n);
+                }
+                else{
+                    output = rusanov(UR, UL, 1.4, n);
+                }
             }
 
             else if (opt == 3){
-                output = HLLE(UL, UR, 1.4, n);
+                if(iElemR != -1){
+                    output = HLLE(UL, UR, 1.4, n);
+                }
+                else{
+                    output = HLLE(UR, UL, 1.4, n);
+                }
             }
 
             vector<double> F = output.F;
             s = output.smag;
-            
-//            if(iElemL == 446 || iElemR == 446){
-//                int stop = 0;
-//            }
-            if(iElemL == 909 || iElemR == 909){
-                int stop = 0;
-            }
 
             if(iElemR != -1){
                 // Increment and decrement the residuals
@@ -906,27 +877,25 @@ vector<vector<double>> secondOrderFV(int opt, vector<vector<double>> &U, vector<
                 }
                 residuals[iElemL][4] += s*length; // I dont know what it means to add wave speed tallies on L and R cells
             }
-            
-            int stopper = 0; 
-
+        
         } // end for iFaceGlobal
         
         //  Calculate L1 Residual norm
         residual = computeL1ResidualNorm(residuals);
     
     
-    for(int j = 0; j < residuals.size(); j++){
-        vector<double> currResidTest = residuals[j];
-        double currSum = 0;
-        for(int i = 0; i < 4; i++){
-            // cout << currResidTest[i] << " ";
-            currSum += currResidTest[i];
-        }
-        // cout << "\n";
-        if(currSum >1500){
-            cout << "Bad Element (0-based) = "  << j << "\n";
-        }
-    }
+//    for(int j = 0; j < residuals.size(); j++){
+//        vector<double> currResidTest = residuals[j];
+//        double currSum = 0;
+//        for(int i = 0; i < 4; i++){
+//            // cout << currResidTest[i] << " ";
+//            currSum += currResidTest[i];
+//        }
+//        // cout << "\n";
+//        if(currSum >1500){
+//            cout << "Bad Element (0-based) = "  << j << "\n";
+//        }
+//    }
     
     vector<double> elementResidSum;
     elementResidSum.reserve(nelem);

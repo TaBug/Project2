@@ -84,9 +84,22 @@ void rk2(int opt, vector<vector<double>> &u, vector<double> const &area ,vector<
         
 //        cout << residSum << "\n";
         
-        if(niter % 3000 == 0){
+        if(niter % 2500 == 0){
             cout << "\n\nIteration " << niter << " residual is " << residSum << "\n\n\n";
         }
+        
+//        if(niter % 25000 == 0){ // asking for termination every 25000 iterations
+//            cout << "Should terminate (1 == YES & 0 == NO)? ";
+//            int termFlag = - 1;
+//            cin >> termFlag;
+//            if(termFlag == 1){
+//                break;
+//            }
+//            else{
+//                cout << "\n";
+//            }
+//            
+//        }
 
         // second step of RK2
         for (int i = 0; i < nelem; i++){

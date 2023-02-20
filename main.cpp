@@ -21,14 +21,15 @@ int main(){
     // TODO: FILL OUT (also make sure Minf if picked correctly in FE_FVM.h as well)
     int opt = 2;
     string limiterType = "BJ";
-    double CFL = 0.3;
-    double Minf = 0.5;
+    double CFL = 0.5;
+    double Minf = 0.25;
     double alphaDeg = 8;
+    double convergenceThreshold = pow(10,-5);
     // TODO: end
  
     cout << "Computational Fluid Dynamics II Driver...\n";
 //    int nnode, nbedge, nelem;
-    string fileName = "/Users/jakeyeaman/Desktop/Comp Fluid Dyn II/Project-2/c3.gri";
+    string fileName = "/Users/jakeyeaman/Desktop/Comp Fluid Dyn II/Project-2/c1.gri";
 //    getMatSizes(fileName, nnode,nbedge,nelem);
 //
 //    int niedge = 0.5*(3*nelem - nbedge);
@@ -41,7 +42,6 @@ int main(){
     int nbedge = getnbedge(fileName);
     int nelem = getnelem(fileName);
     int niedge = 0.5 * (3 * nelem - nbedge); // number of interior edges
-    double convergenceThreshold = pow(8,-4);
     
     vector<vector<double>> nodes=getnodes(fileName);
     vector<vector<double>> elem=getelement(fileName);
@@ -63,9 +63,9 @@ int main(){
     vector<vector<double>> u(nelem, vector<double> (4));
     for(int i=0;i<nelem;++i)  {
         u[i][0]=1;
-        u[i][1]=.25*cos(8*3.14159/180);
-        u[i][2]=.25*sin(8*3.14159/180);
-        u[i][3]=1/(.4*1.4)+.25*.25/2;
+        u[i][1]=Minf*cos(8*3.14159/180);
+        u[i][2]=Minf*sin(8*3.14159/180);
+        u[i][3]=1/(.4*1.4)+Minf*Minf/2;
     }
 
     FVM_1st(bounds, nodes, interiorFaces, u, B2E, Bn, In, nelem,Minf);

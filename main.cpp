@@ -10,6 +10,7 @@
 #include "FE_FVM.h"
 #include "RK2_FVM.h"
 #include "elem2Edge.h"
+#include "read_gri.h"
 
 
 
@@ -17,25 +18,37 @@ using namespace std;
 
 int main(){
     
-    // TODO: FILL
+    // TODO: FILL OUT (also make sure Minf if picked correctly in FE_FVM.h as well)
     int opt = 2;
-    double CFL = 1;
-    double Minf = 0.25;
+    string limiterType = "BJ";
+    double CFL = 0.3;
+    double Minf = 0.5;
     double alphaDeg = 8;
+    // TODO: end
  
     cout << "Computational Fluid Dynamics II Driver...\n";
-    int nnode, nbedge, nelem;
-    string fileName = "/Users/jakeyeaman/Desktop/Comp Fluid Dyn II/Project-1/CoarseMesh";
-    getMatSizes(fileName, nnode,nbedge,nelem);
-        
-    int niedge = 0.5*(3*nelem - nbedge);
+//    int nnode, nbedge, nelem;
+    string fileName = "/Users/jakeyeaman/Desktop/Comp Fluid Dyn II/Project-2/c3.gri";
+//    getMatSizes(fileName, nnode,nbedge,nelem);
+//
+//    int niedge = 0.5*(3*nelem - nbedge);
+//
+//    vector<vector<double>> nodes(nnode, vector<double>(2));
+//    vector<vector<double>> elem(nelem, vector<double>(3)); // [node1, node2, node3]
+//    vector<vector<double>> bounds(nbedge, vector<double>(3)); // [node1, node2, boundaryGroup]
     
-    vector<vector<double>> nodes(nnode, vector<double>(2));
-    vector<vector<double>> elem(nelem, vector<double>(3)); // [node1, node2, node3]
-    vector<vector<double>> bounds(nbedge, vector<double>(3)); // [node1, node2, boundaryGroup]
+    int nnode = getnnode(fileName);
+    int nbedge = getnbedge(fileName);
+    int nelem = getnelem(fileName);
+    int niedge = 0.5 * (3 * nelem - nbedge); // number of interior edges
+    double convergenceThreshold = pow(8,-4);
     
-    readGmshFile(fileName,nnode,nbedge,nelem,nodes,elem,bounds);
-    generateGri("/Users/jakeyeaman/Desktop/Comp Fluid Dyn II/Project-2/CoarseMesh.gri", nnode, nbedge, nelem, nodes, elem, bounds);
+    vector<vector<double>> nodes=getnodes(fileName);
+    vector<vector<double>> elem=getelement(fileName);
+    vector<vector<double>> bounds=getboundaries(fileName);
+    
+    // readGmshFile(fileName,nnode,nbedge,nelem,nodes,elem,bounds);
+    // generateGri("/Users/jakeyeaman/Desktop/Comp Fluid Dyn II/Project-2/CoarseMesh.gri", nnode, nbedge, nelem, nodes, elem, bounds);
     vector<vector<double>> interiorFaces = genInteriorFaceVec(niedge, nelem, nbedge, bounds, elem);
         
     niedge = int(interiorFaces.size());
@@ -55,7 +68,7 @@ int main(){
         u[i][3]=1/(.4*1.4)+.25*.25/2;
     }
 
-    FVM_1st(bounds, nodes, interiorFaces, u, B2E, Bn, In, nelem);
+    FVM_1st(bounds, nodes, interiorFaces, u, B2E, Bn, In, nelem,Minf);
     
     vector<vector<double>> U_firstOrder = u;
     
@@ -65,7 +78,8 @@ int main(){
     vector<double> L1_norms;
     L1_norms.reserve(10000);
     
-    rk2(opt, U_firstOrder, Area, nodes, elem, Minf, alphaDeg, Bn, In, elemBounds, bounds, interiorFaces, globalEdges, I2E, B2E, "BJ", pow(10,-5), Area, elem.size(), CFL,L1_norms);
+    int niter = 0;
+    rk2(opt, U_firstOrder, Area, nodes, elem, Minf, alphaDeg, Bn, In, elemBounds, bounds, interiorFaces, globalEdges, I2E, B2E, limiterType, convergenceThreshold, Area, elem.size(), CFL,L1_norms, niter);
     
     ofstream outputFileStates;
     outputFileStates.open("/Users/jakeyeaman/Desktop/Comp Fluid Dyn II/Project-2/outputStates.txt");
@@ -84,6 +98,8 @@ int main(){
         outputFileNorms << L1_norms[iNorm] << "\n";
     }
     outputFileNorms.close();
+    
+    cout << "Total Number of Iterations: " << niter << "\n";
     
     return 0;
 

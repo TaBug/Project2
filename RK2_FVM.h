@@ -15,12 +15,12 @@
 
 using namespace std;
 
-void rk2(int opt, vector<vector<double>> &u, vector<double> const &area ,vector<vector<double>> const &nodes, vector<vector<double>> const &elem, double Minf, double alphaDeg, vector<vector<double>> const &Bn, vector<vector<double>> const &In, vector<vector<int>> const &elemBounds, vector<vector<double>> const &bounds, vector<vector<double>> const &interiorFaces, vector<vector<int>> const &globalEdge, vector<vector<double>> const &I2E, vector<vector<double>> const &B2E, string limiterType, double convergedVal, vector<double>const &Area, int nelem, double CFL, vector<double> &L1_norms){
+void rk2(int opt, vector<vector<double>> &u, vector<double> const &area ,vector<vector<double>> const &nodes, vector<vector<double>> const &elem, double Minf, double alphaDeg, vector<vector<double>> const &Bn, vector<vector<double>> const &In, vector<vector<int>> const &elemBounds, vector<vector<double>> const &bounds, vector<vector<double>> const &interiorFaces, vector<vector<int>> const &globalEdge, vector<vector<double>> const &I2E, vector<vector<double>> const &B2E, string limiterType, double convergedVal, vector<double>const &Area, int nelem, double CFL, vector<double> &L1_norms, int &niter){
     vector<vector<double>> f0(nelem,vector<double>(4));
     vector<vector<double>> f1(nelem,vector<double>(4));
     
     double residSum = DBL_MAX;
-    int niter = 0;
+    niter = 0;
 
     while(residSum > convergedVal){
         niter++;
@@ -84,7 +84,7 @@ void rk2(int opt, vector<vector<double>> &u, vector<double> const &area ,vector<
         
 //        cout << residSum << "\n";
         
-        if(niter % 500 == 0){
+        if(niter % 3000 == 0){
             cout << "\n\nIteration " << niter << " residual is " << residSum << "\n\n\n";
         }
 

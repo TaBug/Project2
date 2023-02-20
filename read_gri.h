@@ -42,7 +42,7 @@ return nodes;
 
 
 
-vector<vector<double>> getelem(string fileName){
+vector<vector<double>> getelement(string fileName){
 
     // Open the input file
     ifstream inputFile(fileName);
@@ -89,7 +89,7 @@ return elem;
 
 }
 
-vector<vector<double>> getbounds(string fileName){
+vector<vector<double>> getboundaries(string fileName){
 
     // Open the input file
     ifstream inputFile(fileName);
@@ -154,5 +154,76 @@ vector<vector<double>> getbounds(string fileName){
     inputFile.close();
 
 return bounds;
+
+}
+
+int getnnode(string fileName){
+
+    // Open the input file
+    ifstream inputFile(fileName);
+
+    // Read the first line
+    int nnode;
+    inputFile >> nnode; // nodes
+        int numelem;
+    inputFile >> numelem; // elemnts
+        int b4;
+    inputFile >> b4; // farfield boundary
+        int b1;
+    inputFile >> b1; // slat boundary
+        int b2;
+    inputFile >> b2; // main boundary
+        int b3;
+    inputFile >> b3; // flap boundary    
+
+return nnode;
+
+}
+
+int getnelem(string fileName){
+
+    // Open the input file
+    ifstream inputFile(fileName);
+
+    // Read the first line
+    int nnode;
+    inputFile >> nnode; // nodes
+        int nelem;
+    inputFile >> nelem; // elemnts
+        int b4;
+    inputFile >> b4; // farfield boundary
+        int b1;
+    inputFile >> b1; // slat boundary
+        int b2;
+    inputFile >> b2; // main boundary
+        int b3;
+    inputFile >> b3; // flap boundary    
+
+return nelem;
+
+}
+
+int getnbedge(string fileName){
+
+    // Open the input file
+    ifstream inputFile(fileName);
+
+    // Read the first line
+    int nnode;
+    inputFile >> nnode; // nodes
+        int numelem;
+    inputFile >> numelem; // elemnts
+        int b4;
+    inputFile >> b4; // farfield boundary
+        int b1;
+    inputFile >> b1; // slat boundary
+        int b2;
+    inputFile >> b2; // main boundary
+        int b3;
+    inputFile >> b3; // flap boundary    
+
+    int nbedge = b1+b2+b3+b4;
+
+return nbedge;
 
 }

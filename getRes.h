@@ -2,17 +2,19 @@
 #include <vector>
 #include <cmath>
 #include "fluxes.h"
+
 using namespace std;
-
-vector<vector<double>> getRes(int& nelem, int& opt, vector<vector<double>>& u, vector<vector<double>>& interiorFaces, vector<vector<double>>& In, vector<vector<double>>& bounds, vector<vector<double>>& Bn,                                   vector<vector<double>>& B2E, vector<vector<double>>& nodes) {
+vector<vector<double>> getRes(int &nelem,int &opt,vector<vector<double>> &u, vector<vector<double>> &interiorFaces,vector<vector<double>> &In,vector<vector<double>> &bounds,vector<vector<double>> &Bn,vector<vector<double>> &B2E,vector<vector<double>> &nodes,double Minf){
     vector<vector<double>> residual(nelem,vector<double>(5));
-    vector<double> F(4), n(2), free(4);
+    vector<double> F(4);
     double s;
-
-    free[0]=1;
-    free[1]=.25*cos(8*3.14159/180);
-    free[2]=.25*sin(8*3.14159/180);
-    free[3]=1/(.4*1.4)+.25*.25/2;
+    vector<double> n(2);
+   
+    vector<double> free(4);
+       free[0]=1;
+    free[1]=Minf*cos(8*3.14159/180);
+    free[2]=Minf*sin(8*3.14159/180);
+    free[3]=1/(.4*1.4)+Minf*Minf/2;
     // set flux function based on user choice
     /*structFlux (*flux)(vector<double>& UL, vector<double>& UR, double gamma, vector<double>& n);
     structFlux output;

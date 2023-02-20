@@ -21,8 +21,8 @@ int main(){
     // TODO: FILL OUT (also make sure Minf if picked correctly in FE_FVM.h as well)
     int opt = 2;
     string limiterType = "BJ";
-    double CFL = 0.5;
-    double Minf = 0.25;
+    double CFL = 0.2;
+    double Minf = 0.5;
     double alphaDeg = 8;
     double convergenceThreshold = pow(10,-5);
     // TODO: end
@@ -72,6 +72,17 @@ int main(){
     
     vector<vector<double>> U_firstOrder = u;
     
+    ofstream outputFileStatesFO;
+    outputFileStatesFO.open("/Users/jakeyeaman/Desktop/Comp Fluid Dyn II/Project-2/outputStates1stOrder.txt");
+
+    for(int iElem = 0; iElem < elem.size(); iElem++){
+        for(int iU = 0; iU < 4; iU++){
+            outputFileStatesFO << U_firstOrder[iElem][iU] << " ";
+        }
+        outputFileStatesFO << "\n";
+    }
+    outputFileStatesFO.close();
+    
     vector<vector<int>> elemBounds = genElemBounds(elem, I2E, B2E);
     vector<vector<int>> globalEdges = genGlobalEdge(bounds, interiorFaces);
     
@@ -81,19 +92,20 @@ int main(){
     int niter = 0;
     rk2(opt, U_firstOrder, Area, nodes, elem, Minf, alphaDeg, Bn, In, elemBounds, bounds, interiorFaces, globalEdges, I2E, B2E, limiterType, convergenceThreshold, Area, elem.size(), CFL,L1_norms, niter);
     
-    ofstream outputFileStates;
-    outputFileStates.open("/Users/jakeyeaman/Desktop/Comp Fluid Dyn II/Project-2/outputStates.txt");
+    ofstream outputFileStatesSO;
+    outputFileStatesSO.open("/Users/jakeyeaman/Desktop/Comp Fluid Dyn II/Project-2/outputStates2ndOrder.txt");
 
     for(int iElem = 0; iElem < elem.size(); iElem++){
         for(int iU = 0; iU < 4; iU++){
-            outputFileStates << U_firstOrder[iElem][iU] << " ";
+            outputFileStatesSO << U_firstOrder[iElem][iU] << " ";
         }
-        outputFileStates << "\n";
+        outputFileStatesSO << "\n";
     }
-    outputFileStates.close();
+    outputFileStatesSO.close();
+    
     
     ofstream outputFileNorms;
-    outputFileNorms.open("/Users/jakeyeaman/Desktop/Comp Fluid Dyn II/Project-2/outputL1Norms.txt");
+    outputFileNorms.open("/Users/jakeyeaman/Desktop/Comp Fluid Dyn II/Project-2/outputL1Norms2ndOrder.txt");
     for(int iNorm = 0; iNorm < L1_norms.size(); iNorm++){
         outputFileNorms << L1_norms[iNorm] << "\n";
     }
